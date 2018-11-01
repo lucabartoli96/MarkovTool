@@ -23,21 +23,21 @@ class MarkovChainError(Exception):
     LEN_ROW_PI = 'States list and row number {} of transition matrix have different dimensions'
     SUM_ROW_PI = 'Pi row sum should be 1, row number {} sum is {} instead'
     DUP_STATE = 'Identifier {} names two different states'
-
+    NEG_SIGMA = 'Initial distribution elements should be non-negative'
+    NEG_ROW_PI = 'Pi elements should be non-negative'
 
     def __init__(self, message):
         super(MarkovChainError, self).__init__(message)
 
 class MarkovChain:
 
-    # TODO: Si potrebbero migliorare le eccezioni, dicendo dove sta
-    #       l'errore, e si potrebbe permettere di non passare sigma
-    #       o di passarlo in parte e dare 0 alle altre distribuzioni
-    #       iniziali
     def __init__(self, stateSet, initialDist, transMat):
 
         if len(stateSet) != len(initialDist) :
             raise MarkovChainError(MarkovChainError.LEN_SIGMA)
+
+        if  any(p<0 for p in initialDist):
+            raise MarkovChainError(MarkovChainError.NEG_SIGMA)
 
         if sum(initialDist) != 1 :
             raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(sum(initialDist)))
@@ -49,6 +49,9 @@ class MarkovChain:
 
             if len(row) != len(stateSet) :
                 raise MarkovChainError(MarkovChainError.LEN_ROW_PI.format(i))
+
+            if  any(p<0 for p in row):
+                raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
 
             if sum(row) != 1 :
                 raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(i, sum(row)))
@@ -87,7 +90,6 @@ class MarkovChain:
     def pi(self):
         return self._pi
 
-
     # def comMat(self):
     #
     #     if not self._C:
@@ -113,7 +115,6 @@ class MarkovChain:
 
 
     def comMat(self):
-
 
         if not self._C:
 
