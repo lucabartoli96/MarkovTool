@@ -27,29 +27,7 @@ def main():
 
     # Test Communication Matrix computation
     # compares it to the faster version
-    time_start = time.clock()
-    C1 = mc.comMat();
-    time_elapsed = (time.clock() - time_start)
-    print C1
-    print ""
-    print time_elapsed
-    print ""
-
-    time_start = time.clock()
-    C2 = mc.comMatFast();
-    time_elapsed = (time.clock() - time_start)
-    print C2
-    print ""
-    print time_elapsed
-    print ""
-
-    equal = True
-    n = len(C1)
-    for i in range(n):
-        for j in range(n):
-            equal = equal and C1[i, j] == C2[i, j]
-
-    print equal
+    print mc.comMat()
     print ""
 
 

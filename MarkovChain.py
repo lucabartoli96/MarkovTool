@@ -1,16 +1,6 @@
 
 import numpy as np
 
-ERR_MSG = {
-    'length_sigma'  : 'states set and Initial distribution have different dimensions',
-    'sum_sigma'     : 'Initial distribution sum should be 1',
-    'length_pi'     : 'states set and transition matrix have different dimensions',
-    'sum_pi'        : 'Matrix row sum should be 1',
-    'count_state'   : 'States must have different names',
-    'wrong_name'    : 'Given string does not name any state'
-
-}
-
 def gcd(arg1, arg2=None):
 
     if arg2:
@@ -24,8 +14,21 @@ def gcd(arg1, arg2=None):
             g = gcd(g, num)
         return g
 
-class MarkovChain:
 
+class MarkovChainError(Exception):
+
+    LEN_SIGMA = 'States list and initial ditribution have different dimensions'
+    SUM_SIGMA = 'Initial distribution sum should be 1, it is {} instead'
+    LEN_PI = 'States list and transition matrix have different dimensions'
+    LEN_ROW_PI = 'States list and row number {} of transition matrix have different dimensions'
+    SUM_ROW_PI = 'Pi row sum should be 1, row number {} sum is {} instead'
+    DUP_STATE = 'Identifier {} names two different states'
+
+
+    def __init__(self, message):
+        super(MarkovChainError, self).__init__(message)
+
+class MarkovChain:
 
     # TODO: Si potrebbero migliorare le eccezioni, dicendo dove sta
     #       l'errore, e si potrebbe permettere di non passare sigma
@@ -34,25 +37,25 @@ class MarkovChain:
     def __init__(self, stateSet, initialDist, transMat):
 
         if len(stateSet) != len(initialDist) :
-            raise ValueError(ERR_MSG['length_sigma'])
+            raise MarkovChainError(MarkovChainError.LEN_SIGMA)
 
         if sum(initialDist) != 1 :
-            raise ValueError(ERR_MSG['sum_sigma'])
+            raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(sum(initialDist)))
 
         if len(stateSet) != len(transMat) :
-            raise ValueError(ERR_MSG['length_pi'])
+            raise MarkovChainError(MarkovChainError.LEN_PI)
 
-        for row in transMat:
+        for i, row in enumerate(transMat):
 
             if len(row) != len(stateSet) :
-                raise ValueError(ERR_MSG['length_pi'])
+                raise MarkovChainError(MarkovChainError.LEN_ROW_PI.format(i))
 
             if sum(row) != 1 :
-                raise ValueError(ERR_MSG['sum_pi'])
+                raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(i, sum(row)))
 
         for state in stateSet:
             if stateSet.count(state) > 1 :
-                raise ValueError(ERR_MSG['count_state'])
+                raise MarkovChainError(MarkovChainError.DUP_STATE.format(state))
 
         self._S = tuple(stateSet)
 
@@ -85,20 +88,20 @@ class MarkovChain:
         return self._pi
 
 
-    def comMat(self):
-
-        if not self._C:
-
-            A = np.vectorize(lambda elem: elem != 0)(self.pi)
-            C = np.stack(np.stack(i == j for j in range(self.size)) for i in range(self.size))
-
-            for i in range(self.size):
-                C += np.matmul(C, A)
-
-            C.flags.writeable = False
-            self._C = C
-
-        return self._C
+    # def comMat(self):
+    #
+    #     if not self._C:
+    #
+    #         A = np.vectorize(lambda elem: elem != 0)(self.pi)
+    #         C = np.stack(np.stack(i == j for j in range(self.size)) for i in range(self.size))
+    #
+    #         for i in range(self.size):
+    #             C += np.matmul(C, A)
+    #
+    #         C.flags.writeable = False
+    #         self._C = C
+    #
+    #     return self._C
 
     def _comMat(self, v, visited):
 
@@ -109,16 +112,19 @@ class MarkovChain:
                 self._comMat(u, visited)
 
 
-    def comMatFast(self):
+    def comMat(self):
 
-        C = []
 
-        self._C = np.zeros((self.size, self.size), dtype=bool)
+        if not self._C:
 
-        for v in range(self.size):
-            self._comMat(v, self._C[v])
+            C = []
 
-        self._C.flags.writeable = False
+            self._C = np.zeros((self.size, self.size), dtype=bool)
+
+            for v in range(self.size):
+                self._comMat(v, self._C[v])
+
+            self._C.flags.writeable = False
 
         return self._C
 
