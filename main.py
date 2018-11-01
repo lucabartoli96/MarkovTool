@@ -8,10 +8,15 @@ def main():
     # sigma = [0.2, 0.2, 0.6]
     # pi = [[0.5, 0.5, 0], [0.1, 0, 0.9], [0, 0, 1]]
 
-    S = ['A', 'B', 'C', 'D', 'E']
-    sigma = [1, 0, 0, 0, 0]
-    pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
-          [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
+    # S = ['A', 'B', 'C', 'D', 'E']
+    # sigma = [1, 0, 0, 0, 0]
+    # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
+    #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
+
+    S = ['A', 'B', 'C', 'D']
+    sigma = [1, 0, 0, 0]
+    pi = [[0, 0, 0, 1], [0, 0, 0, 1],
+          [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
 
     mc = MarkovChain(S, sigma, pi)
 
@@ -48,7 +53,6 @@ def main():
     print ""
 
 
-
     # Test classes procedure
     print mc.classes()
     print ""
@@ -62,4 +66,5 @@ def main():
             print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
             print ""
 
-    mc.period('A')
+    for state in S:
+        print "period(" + state + ")= " + str(mc.period(state))

@@ -11,6 +11,18 @@ ERR_MSG = {
 
 }
 
+def gcd(arg1, arg2=None):
+
+    if arg2:
+        a, b = arg1, arg2
+        while b:
+            a, b = b, a % b
+        return a
+    else:
+        g = arg1[0]
+        for num in arg1[1:]:
+            g = gcd(g, num)
+        return g
 
 class MarkovChain:
 
@@ -190,13 +202,13 @@ class MarkovChain:
     def equivalent(self, s1, s2):
         return self.communicate(s1, s2) and self.communicate(s2, s1)
 
+
     def _period(self, s, v, visited, distance, circuits):
 
         visited[v] = True
 
         for u in range(self.size):
             if self.pi[v, u]>0:
-
                 if u == s:
                     circuits.append(distance[v]+1)
 
@@ -214,4 +226,7 @@ class MarkovChain:
 
         self._period(source, source, visited, distance, circuits)
 
-        print circuits
+        if circuits:
+            return gcd(circuits)
+        else:
+            return None
