@@ -1,8 +1,11 @@
 
 from MarkovChain import MarkovChain
+from reader import read
 import time
 
 def main():
+
+    S, sigma, pi = read('prova.txt')
 
     # S = ["A", "B", "C"]
     # sigma = [0.2, 0.2, 0.6]
@@ -13,11 +16,11 @@ def main():
     # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
     #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
 
-    S = ['A', 'B', 'C', 'D']
-    sigma = [1, 0, -0.3, 0.3]
-    pi = [[0, 0, 0, 1], [0, 0, 0, 1],
-          [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
-
+    # S = ['A', 'B', 'C', 'D']
+    # sigma = [1, 0, -0.3, 0.3]
+    # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
+    #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
+    #
     mc = MarkovChain(S, sigma, pi)
 
     print mc.S
@@ -38,11 +41,11 @@ def main():
 
     # For each couple of states prints if they
     # communicate or they are equivalent
-    for  s1 in S:
-        for s2 in S:
-            print s1 + '<' + s2 + ': ' + str(mc.communicate(s1, s2))
-            print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
-            print ""
+    # for  s1 in S:
+    #     for s2 in S:
+    #         print s1 + '<' + s2 + ': ' + str(mc.communicate(s1, s2))
+    #         print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
+    #         print ""
 
     for state in S:
         print "period(" + state + ")= " + str(mc.period(state))

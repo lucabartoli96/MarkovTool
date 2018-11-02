@@ -1,5 +1,6 @@
 
 import numpy as np
+import sys
 
 def gcd(arg1, arg2=None):
 
@@ -39,7 +40,7 @@ class MarkovChain:
         if  any(p<0 for p in initialDist):
             raise MarkovChainError(MarkovChainError.NEG_SIGMA)
 
-        if sum(initialDist) != 1 :
+        if sum(initialDist) != 1.0 :
             raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(sum(initialDist)))
 
         if len(stateSet) != len(transMat) :
@@ -53,7 +54,7 @@ class MarkovChain:
             if  any(p<0 for p in row):
                 raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
 
-            if sum(row) != 1 :
+            if sum(row) != 1.0 :
                 raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(i, sum(row)))
 
         for state in stateSet:
@@ -237,3 +238,13 @@ class MarkovChain:
             return gcd(circuits)
         else:
             return None
+
+    def path():
+
+        class Path:            
+
+            def __init__(self):
+                self._s = self._first()
+
+            def next():
+                pass
