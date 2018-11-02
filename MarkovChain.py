@@ -24,6 +24,7 @@ class MarkovChainError(Exception):
     LEN_ROW_PI = 'States list and row number {} of transition matrix have different dimensions'
     SUM_ROW_PI = 'Pi row sum should be 1, row number {} sum is {} instead'
     DUP_STATE = 'Identifier {} names two different states'
+    NO_STATE = 'Identifier {} does not name any state'
     NEG_SIGMA = 'Initial distribution elements should be non-negative'
     NEG_ROW_PI = 'Pi elements should be non-negative'
     DUP_TRANS = 'Transition to {} already defined'
@@ -258,10 +259,27 @@ class MarkovChain:
                 }
 
             def setInitial(self, s, intial):
+
+                if s not in self._S:
+                    raise MarkovChainError(MarkovChainError.NO_STATE.format(s))
+
+                if initial < 0:
+                    raise MarkovChainError(MarkovChainError.NEG_SIGMA)
+
                 self._S[s]['initial'] = initial
 
             def setTransitions(self, s, transitions):
-                self._S = transitions
+
+                if s not in self._S:
+                    raise MarkovChainError(MarkovChainError.NO_STATE.format(s))
+
+                for s1 in transitions:
+                    if s1 not in self._S:
+                        raise MarkovChainError(MarkovChainError.NO_STATE.format(s))
+                    if transitions[s1] < 0:
+                        raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
+
+                self._S[s]['transitions'] = transitions
 
             def addTransition(self, s1, s2, p):
                 if s2 in self._S[s1]['transitions']:
