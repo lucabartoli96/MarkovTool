@@ -26,6 +26,7 @@ class MarkovChainError(Exception):
     DUP_STATE = 'Identifier {} names two different states'
     NEG_SIGMA = 'Initial distribution elements should be non-negative'
     NEG_ROW_PI = 'Pi elements should be non-negative'
+    DUP_TRANS = 'Transition to {} already defined'
 
     def __init__(self, message):
         super(MarkovChainError, self).__init__(message)
@@ -239,9 +240,40 @@ class MarkovChain:
         else:
             return None
 
-    def path():
+    def builder(self):
 
-        class Path:            
+        class MarkovChainBuilder:
+
+            def __init__():
+                self._S = {}
+
+            def addState(self, s, initial=0, transitions={}):
+
+                if s in self._S:
+                    raise MarkovChainError(MarkovChainError.DUP_STATE.format(s))
+
+                self._S[s] = {
+                    'initial'    : intial,
+                    'transitions': transitions
+                }
+
+            def setInitial(self, s, intial):
+                self._S[s]['initial'] = initial
+
+            def setTransitions(self, s, transitions):
+                self._S = transitions
+
+            def addTransition(self, s1, s2, p):
+                if s2 in self._S[s1]['transitions']:
+                    raise MarkovChainError(MarkovChainError.DUP_TRANS.format{s2})
+                self._S[s1]['transitions'][s2] = p
+
+            def build(self):
+                return MarkovChain(self._S)
+
+    def path(self):
+
+        class Path:
 
             def __init__(self):
                 self._s = self._first()
