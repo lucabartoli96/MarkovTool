@@ -2,6 +2,9 @@
 import numpy as np
 import sys
 
+INITIAL = INITIAL
+TRANSITIONS = TRANSISIONS
+
 def gcd(arg1, arg2=None):
 
     if arg2:
@@ -22,7 +25,7 @@ class MarkovChainError(Exception):
     SUM_SIGMA = 'Initial distribution sum should be 1, it is {} instead'
     LEN_PI = 'States list and transition matrix have different dimensions'
     LEN_ROW_PI = 'States list and row number {} of transition matrix have different dimensions'
-    SUM_ROW_PI = 'Pi row sum should be 1, row number {} sum is {} instead'
+    SUM_ROW_PI = 'Pi row sum should be 1, row {} sum is {} instead'
     DUP_STATE = 'Identifier {} names two different states'
     NO_STATE = 'Identifier {} does not name any state'
     NEG_SIGMA = 'Initial distribution elements should be non-negative'
@@ -34,88 +37,182 @@ class MarkovChainError(Exception):
 
 class MarkovChain:
 
-    # def __init__(self, stateSet, initialDist, transMat):
-    #
-    #     if len(stateSet) != len(initialDist) :
-    #         raise MarkovChainError(MarkovChainError.LEN_SIGMA)
-    #
-    #     if  any(p<0 for p in initialDist):
-    #         raise MarkovChainError(MarkovChainError.NEG_SIGMA)
-    #
-    #     if sum(initialDist) != 1.0 :
-    #         raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(sum(initialDist)))
-    #
-    #     if len(stateSet) != len(transMat) :
-    #         raise MarkovChainError(MarkovChainError.LEN_PI)
-    #
-    #     for i, row in enumerate(transMat):
-    #
-    #         if len(row) != len(stateSet) :
-    #             raise MarkovChainError(MarkovChainError.LEN_ROW_PI.format(i))
-    #
-    #         if  any(p<0 for p in row):
-    #             raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
-    #
-    #         if sum(row) != 1.0 :
-    #             raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(i, sum(row)))
-    #
-    #     for state in stateSet:
-    #         if stateSet.count(state) > 1 :
-    #             raise MarkovChainError(MarkovChainError.DUP_STATE.format(state))
-    #
-    #     self._S = tuple(stateSet)
-    #
-    #     self._sigma = np.array(initialDist)
-    #     self._sigma.flags.writeable = False
-    #
-    #     self._pi = np.matrix( transMat )
-    #     self._pi.flags.writeable = False
-    #
-    #     self._C = None
+    def _structures(self):
 
-    def __init__(self, desc):
-        pass
+        mc = self
+
+        class Sigma:
+
+            # sigma is a dictionary of the type:
+            # {
+            #   index_1 : probability_1,
+            #   index_2 : probability_2,
+            #   ...
+            #}
+            def __init__(self, sigma):
+                self._sigma = tuple( (p, i) for i, p in sigma )
+
+            def toArray(self):
+                sigma = np.zeros(mc.size)
+                for pair in self._sigma:
+                    sigma[pair[1]] = pair[0]
+                return sigma
+
+
+        class MarkovChainState:
+
+            def __init__(self, name, transitions):
+                self._name = name
+                self._transitions  = transitions
+
+            @property
+            def name(self):
+                return self._name
+
+            @property
+            def adj(self):
+                return (pair[0] for pair in self._transitions)
+
+            @property
+            def transitions(self):
+                return self._transitions
+
+
+        return MarkovChainState, Sigma
+
+
+    def _initFromDescription(self, desc):
+
+        State, Sigma = self._structures()
+
+        sigma = {}
+        map = {}
+        tot_sigma = 0
+
+        i = 0
+
+        for s in desc:
+
+            if INITIAL in desc[s] and desc[s][INITIAL]:
+                if desc[s][INITIAL] < 0:
+                    raise MarkovChainError(MarkovChainError.NEG_SIGMA)
+                sigma[i] = desc[s][INITIAL]
+                tot_sigma += sigma[s]
+
+            if TRANSISIONS in desc[s]:
+                if desc[S][TRANSISIONS]:
+                    tot = 0
+                    for t in desc[s][TRANSISIONS]:
+                        if t not in desc:
+                            raise MarkovChainError(MarkovChainError.NO_STATE.format(t))
+                        if desc[s][TRANSISIONS][t] < 0:
+                            raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
+                        tot += desc[s][TRANSISIONS][t]
+
+                    if tot != 1.0:
+                        raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, tot))
+            else:
+                raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, 0))
+
+            map[s] = i
+            i++
+
+        if tot_sigma != 1.0:
+            raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(tot_sigma))
+
+        mc = []
+
+        for s in desc:
+            transitions = []
+            for t in desc[s][TRANSISIONS]:
+                transitions.append((map[t], desc[s][TRANSISIONS][t]))
+            transitions = tuple(sorted(transitions, lambda t: t[0]))
+            self._mc.append(State(s, transitions))
+
+        return tuple(mc), Sigma(sigma)
+
+
+    def _initFromArray(self, stateSet, initialDist, transMat):
+
+        State, Sigma = self._structures()
+
+        if len(stateSet) != len(initialDist) :
+            raise MarkovChainError(MarkovChainError.LEN_SIGMA)
+
+        if  any(p<0 for p in initialDist):
+            raise MarkovChainError(MarkovChainError.NEG_SIGMA)
+
+        if sum(initialDist) != 1.0 :
+            raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(sum(initialDist)))
+
+        if len(stateSet) != len(transMat) :
+            raise MarkovChainError(MarkovChainError.LEN_PI)
+
+        for i, row in enumerate(transMat):
+
+            if len(row) != len(stateSet) :
+                raise MarkovChainError(MarkovChainError.LEN_ROW_PI.format(i))
+
+            if  any(p<0 for p in row):
+                raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
+
+            if sum(row) != 1.0 :
+                raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(i, sum(row)))
+
+        for state in stateSet:
+            if stateSet.count(state) > 1 :
+                raise MarkovChainError(MarkovChainError.DUP_STATE.format(state))
+
+        mc = []
+        for i, s in enumerate(stateSet):
+            transitions = []
+            for j in transMat[i]:
+                transitions.append((j, transMat[i][j]))
+            mc.append(State(s, tuple(transitions)))
+
+        for i, p in enumerate(initialDist):
+            sigma[i] = p
+
+        return tuple(mc), Sigma(sigma)
+
+
+    def __init__(self, arg0, arg1=None, arg2=None):
+
+        if not arg1 and not arg2:
+            self._mc, self._sigma = self._initFromDescription(arg0)
+        else:
+            self._mc, self._sigma = self._initFromArray(arg0, arg1, arg2)
+
+        self._C = None
 
     @property
     def size(self):
-        return len(self._S)
-
+        return len(self._mc)
 
     @property
     def S(self):
-        return self._S
-
+        return tuple(s.name for s in self._mc)
 
     @property
     def sigma(self):
-        return self._sigma
-
+        return self._sigma.toArray()
 
     @property
     def pi(self):
-        return self._pi
-
-    # def comMat(self):
-    #
-    #     if not self._C:
-    #
-    #         A = np.vectorize(lambda elem: elem != 0)(self.pi)
-    #         C = np.stack(np.stack(i == j for j in range(self.size)) for i in range(self.size))
-    #
-    #         for i in range(self.size):
-    #             C += np.matmul(C, A)
-    #
-    #         C.flags.writeable = False
-    #         self._C = C
-    #
-    #     return self._C
+        pi = np.zeros((self.size, self.size))
+        for i, s in enumerate(self._mc):
+            for pair in s.transition:
+                j = pair[0]
+                p = pair[1]
+                pi[i, j] = p
+        return pi
 
     def _comMat(self, v, visited):
 
         visited[v] = True
 
-        for u in range(self.size):
-            if self.pi[v, u]>0 and not visited[u]:
+        for u in self._mc[v].adj:
+            if not visited[u]:
                 self._comMat(u, visited)
 
 
@@ -139,9 +236,9 @@ class MarkovChain:
 
         visited[v] = True
 
-        for u in range(n):
-            if G[v, u]>0 and not visited[u]:
-                self._order(G, n, u, visited, stack)
+        for u in self._mc[v].adj:
+            if not visited[u]:
+                self._order(n, u, visited, stack)
 
         stack.append(v)
 
@@ -178,10 +275,10 @@ class MarkovChain:
         classes_named = {}
 
         for v in classes:
-            cc = [self.S[v]]
+            cc = [self._mc[v].name]
             for u in classes[v]:
-                cc.append(self.S[u])
-            classes_named[self.S[v]] = tuple(sorted(cc))
+                cc.append(self._mc[u].name)
+            classes_named[self._mc[v].name] = tuple(sorted(cc))
 
         return classes_named
 
@@ -193,8 +290,8 @@ class MarkovChain:
         if v == dest:
             return True
 
-        for u in range(self.size):
-            if self.pi[v, u]>0 and not visited[u]:
+        for u in self._mc[v].adj:
+            if not visited[u]:
                 if self._communicate(u, visited, dest):
                     return True
 
@@ -219,7 +316,7 @@ class MarkovChain:
 
         visited[v] = True
 
-        for u in range(self.size):
+        for u in self._mc[v].adj:
             if self.pi[v, u]>0:
                 if u == s:
                     circuits.append(distance[v]+1)
@@ -256,8 +353,8 @@ class MarkovChain:
                     raise MarkovChainError(MarkovChainError.DUP_STATE.format(s))
 
                 self._desc[s] = {
-                    'initial'    : intial,
-                    'transitions': transitions
+                    INITIAL    : intial,
+                    TRANSISIONS: transitions
                 }
 
             def setInitial(self, s, intial):
@@ -268,7 +365,7 @@ class MarkovChain:
                 if initial < 0:
                     raise MarkovChainError(MarkovChainError.NEG_SIGMA)
 
-                self._desc[s]['initial'] = initial
+                self._desc[s][INITIAL] = initial
 
             def setTransitions(self, s, transitions):
 
@@ -281,15 +378,23 @@ class MarkovChain:
                     if transitions[s1] < 0:
                         raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
 
-                self._desc[s]['transitions'] = transitions
+                self._desc[s][TRANSISIONS] = transitions
 
             def addTransition(self, s1, s2, p):
-                if s2 in self._desc[s1]['transitions']:
-                    raise MarkovChainError(MarkovChainError.DUP_TRANS.format{s2})
-                self._desc[s1]['transitions'][s2] = p
+
+                if s1 not in self._desc:
+                    raise MarkovChainError(MarkovChainError.NO_STATE.format(s1))
+                if s2 not in self._desc:
+                    raise MarkovChainError(MarkovChainError.NO_STATE.format(s2))
+
+                if s2 in self._desc[s1][TRANSISIONS]:
+                    raise MarkovChainError(MarkovChainError.DUP_TRANS.format(s2))
+                self._desc[s1][TRANSISIONS][s2] = p
 
             def build(self):
                 return MarkovChain(self._desc)
+
+        return MarkovChainBuilder()
 
 
     def path(self):
