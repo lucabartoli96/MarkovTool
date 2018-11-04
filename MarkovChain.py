@@ -52,6 +52,9 @@ class MarkovChain:
             def __init__(self, sigma):
                 self._sigma = tuple( (sigma[i], i) for i in sigma )
 
+            def random(self):
+                pass
+
             def toArray(self):
                 sigma = np.zeros(mc.size)
                 for pair in self._sigma:
@@ -77,6 +80,8 @@ class MarkovChain:
             def transitions(self):
                 return self._transitions
 
+            def random(self):
+                pass
 
         return MarkovChainState, Sigma
 
@@ -455,13 +460,19 @@ class MarkovChain:
 
         return MarkovChainBuilder()
 
-
     def path(self):
+
+        mc = self
 
         class Path:
 
             def __init__(self):
-                self._s = self._first()
+                self._s = None
 
             def next(self):
-                pass
+                if self._s:
+                    self._s = mc._sigma.random()
+                else:
+                    self._s = self._s.random()
+
+                return self._s.name
