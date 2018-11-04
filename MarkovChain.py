@@ -2,8 +2,8 @@
 import numpy as np
 import sys
 
-INITIAL = INITIAL
-TRANSITIONS = TRANSISIONS
+INITIAL = 'initial'
+TRANSITIONS = 'transisions'
 
 def gcd(arg1, arg2=None):
 
@@ -43,14 +43,14 @@ class MarkovChain:
 
         class Sigma:
 
-            # sigma is a dictionary of the type:
+            # sigma is a dictionary with the structure:
             # {
             #   index_1 : probability_1,
             #   index_2 : probability_2,
             #   ...
             #}
             def __init__(self, sigma):
-                self._sigma = tuple( (p, i) for i, p in sigma )
+                self._sigma = tuple( (sigma[i], i) for i in sigma )
 
             def toArray(self):
                 sigma = np.zeros(mc.size)
@@ -81,6 +81,21 @@ class MarkovChain:
         return MarkovChainState, Sigma
 
 
+    # desc is a dictionary with the structure:
+    # {
+    #   name_1 : {
+    #               ['initial' : sigma_1,]
+    #               'transitions': {
+    #                   name_i_1 : t_i_1,
+    #                   name_i_2 : t_i_2,
+    #                   ...
+    #   }
+    #   name_2 : {
+    #               ...
+    #   }
+    #   ...
+    #}
+    # so the field 'initial' is optional
     def _initFromDescription(self, desc):
 
         State, Sigma = self._structures()
@@ -115,7 +130,7 @@ class MarkovChain:
                 raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, 0))
 
             map[s] = i
-            i++
+            i += 1
 
         if tot_sigma != 1.0:
             raise MarkovChainError(MarkovChainError.SUM_SIGMA.format(tot_sigma))
@@ -166,12 +181,17 @@ class MarkovChain:
         mc = []
         for i, s in enumerate(stateSet):
             transitions = []
-            for j in transMat[i]:
-                transitions.append((j, transMat[i][j]))
+            for j in range(len(stateSet)):
+                if transMat[i][j]>0:
+                    transitions.append((j, transMat[i][j]))
             mc.append(State(s, tuple(transitions)))
+
+        sigma = {}
 
         for i, p in enumerate(initialDist):
             sigma[i] = p
+
+        print sigma
 
         return tuple(mc), Sigma(sigma)
 
@@ -201,7 +221,7 @@ class MarkovChain:
     def pi(self):
         pi = np.zeros((self.size, self.size))
         for i, s in enumerate(self._mc):
-            for pair in s.transition:
+            for pair in s.transitions:
                 j = pair[0]
                 p = pair[1]
                 pi[i, j] = p
@@ -232,53 +252,75 @@ class MarkovChain:
         return self._C
 
 
-    def _order(self, G, n, v, visited, stack):
+    def _order(self, v, visited, stack):
 
         visited[v] = True
 
         for u in self._mc[v].adj:
             if not visited[u]:
-                self._order(n, u, visited, stack)
+                self._order(u, visited, stack)
 
         stack.append(v)
 
+    def _transposedAdj(self, v):
+        adj = []
+        for i, s in enumerate(self._mc):
+            for j in s.adj:
+                if j == v:
+                    adj.append(i)
+        return adj
 
-    def _cc(self, Gt, n, v, visited, cc):
+    def _cc(self, v, visited, cc):
 
         visited[v] = True
 
-        for u in range(n):
-            if Gt[v, u]>0 and not visited[u]:
+        for u in self._transposedAdj(v):
+            if not visited[u]:
                 cc.append(u)
-                self._cc(Gt, n, u, visited, cc)
+                self._cc(u, visited, cc)
 
 
-    def classes(self):
+    def _classes(self):
 
         visited = np.zeros(self.size, dtype=bool)
         stack = []
 
         for v in range(self.size):
             if not visited[v]:
-                self._order(self.pi, self.size, v, visited, stack)
+                self._order(v, visited, stack)
 
         visited = np.zeros(self.size, dtype=bool)
         classes = {}
-        Gt = np.transpose(self.pi)
 
         while stack:
             v = stack.pop()
             if not visited[v]:
-                classes[v] = []
-                self._cc(Gt, self.size, v, visited, classes[v])
+                classes[v] = [v]
+                self._cc(v, visited, classes[v])
 
+        return classes
+
+
+    def _getClass(self, v):
+
+        classes = self._classes()
+
+        for u in classes:
+            if v in classes[u]:
+                return classes[u]
+
+
+    def getClass(self, s):
+        return tuple( self._mc[u].name for u in self._getClass(self.index(s)))
+
+
+    def classes(self):
+
+        classes = self._classes()
         classes_named = {}
 
         for v in classes:
-            cc = [self._mc[v].name]
-            for u in classes[v]:
-                cc.append(self._mc[u].name)
-            classes_named[self._mc[v].name] = tuple(sorted(cc))
+            classes_named[self._mc[v].name] = tuple(self._mc[u].name for u in classes[v])
 
         return classes_named
 
@@ -298,10 +340,16 @@ class MarkovChain:
         return False
 
 
+    def index(self, name):
+        for i, s in enumerate(self._mc):
+            if s.name == name:
+                return i
+
+
     def communicate(self, s1, s2):
 
-        source = self.S.index(s1)
-        dest   = self.S.index(s2)
+        source = self.index(s1)
+        dest   = self.index(s2)
 
         visited = np.zeros(self.size, dtype=bool)
 
@@ -317,9 +365,11 @@ class MarkovChain:
         visited[v] = True
 
         for u in self._mc[v].adj:
-            if self.pi[v, u]>0:
+
                 if u == s:
-                    circuits.append(distance[v]+1)
+                    d = distance[v]+1
+                    if d not in circuits:
+                        circuits.append(d)
 
                 if not visited[u]:
                     distance[u] = distance[v]+1
@@ -327,18 +377,21 @@ class MarkovChain:
 
 
     def period(self, s):
-        source = self.S.index(s)
 
-        visited = np.zeros(self.size, dtype=bool)
-        distance = np.zeros(self.size)
+        C = self._getClass(self.index(s))
         circuits = []
 
-        self._period(source, source, visited, distance, circuits)
+        for source in C:
+            visited = np.zeros(self.size, dtype=bool)
+            distance = np.zeros(self.size)
+
+            self._period(source, source, visited, distance, circuits)
 
         if circuits:
             return gcd(circuits)
         else:
             return None
+
 
     def builder(self):
 
@@ -404,5 +457,5 @@ class MarkovChain:
             def __init__(self):
                 self._s = self._first()
 
-            def next():
+            def next(self):
                 pass
