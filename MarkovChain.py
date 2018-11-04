@@ -209,16 +209,15 @@ class MarkovChain:
     def size(self):
         return len(self._mc)
 
-    @property
-    def S(self):
+
+    def states(self):
         return tuple(s.name for s in self._mc)
 
-    @property
-    def sigma(self):
+
+    def initialDistribution(self):
         return self._sigma.toArray()
 
-    @property
-    def pi(self):
+    def transitionMatrix(self):
         pi = np.zeros((self.size, self.size))
         for i, s in enumerate(self._mc):
             for pair in s.transitions:

@@ -3,6 +3,10 @@ from MarkovChain import MarkovChain
 from reader import read
 import time
 
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
 def main():
 
     #S, sigma, pi = read('prova.txt')
@@ -23,10 +27,10 @@ def main():
 
     mc = MarkovChain(S, sigma, pi)
 
-    # print mc.S
-    # print mc.sigma
-    # print mc.pi
-    # print ""
+    print mc.states()
+    print mc.initialDistribution()
+    print mc.transitionMatrix()
+    print ""
 
     # Test Communication Matrix computation
     # compares it to the faster version
