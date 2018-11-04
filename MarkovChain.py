@@ -3,7 +3,7 @@ import numpy as np
 import sys
 
 INITIAL = 'initial'
-TRANSITIONS = 'transisions'
+TRANSITIONS = 'transitions'
 
 def gcd(arg1, arg2=None):
 
@@ -112,17 +112,17 @@ class MarkovChain:
                 if desc[s][INITIAL] < 0:
                     raise MarkovChainError(MarkovChainError.NEG_SIGMA)
                 sigma[i] = desc[s][INITIAL]
-                tot_sigma += sigma[s]
+                tot_sigma += sigma[i]
 
-            if TRANSISIONS in desc[s]:
-                if desc[S][TRANSISIONS]:
+            if TRANSITIONS in desc[s]:
+                if desc[s][TRANSITIONS]:
                     tot = 0
-                    for t in desc[s][TRANSISIONS]:
+                    for t in desc[s][TRANSITIONS]:
                         if t not in desc:
                             raise MarkovChainError(MarkovChainError.NO_STATE.format(t))
-                        if desc[s][TRANSISIONS][t] < 0:
+                        if desc[s][TRANSITIONS][t] < 0:
                             raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
-                        tot += desc[s][TRANSISIONS][t]
+                        tot += desc[s][TRANSITIONS][t]
 
                     if tot != 1.0:
                         raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, tot))
@@ -139,10 +139,10 @@ class MarkovChain:
 
         for s in desc:
             transitions = []
-            for t in desc[s][TRANSISIONS]:
-                transitions.append((map[t], desc[s][TRANSISIONS][t]))
-            transitions = tuple(sorted(transitions, lambda t: t[0]))
-            self._mc.append(State(s, transitions))
+            for t in desc[s][TRANSITIONS]:
+                transitions.append((map[t], desc[s][TRANSITIONS][t]))
+            transitions = tuple(sorted(transitions, lambda t1, t2: t1[0] < t2[0]))
+            mc.append(State(s, transitions))
 
         return tuple(mc), Sigma(sigma)
 
@@ -400,25 +400,23 @@ class MarkovChain:
         else:
             return None
 
-
-    def builder(self):
+    @staticmethod
+    def builder():
 
         class MarkovChainBuilder:
 
-            def __init__():
+            def __init__(self):
                 self._desc = {}
 
-            def addState(self, s, initial=0, transitions={}):
+            def addState(self, s, initial=None, transitions=None):
 
                 if s in self._desc:
                     raise MarkovChainError(MarkovChainError.DUP_STATE.format(s))
 
-                self._desc[s] = {
-                    INITIAL    : intial,
-                    TRANSISIONS: transitions
-                }
+                self._desc[s] = {}
+                self._desc[s][TRANSITIONS] = {}
 
-            def setInitial(self, s, intial):
+            def setInitial(self, s, initial):
 
                 if s not in self._desc:
                     raise MarkovChainError(MarkovChainError.NO_STATE.format(s))
@@ -439,7 +437,7 @@ class MarkovChain:
                     if transitions[s1] < 0:
                         raise MarkovChainError(MarkovChainError.NEG_ROW_PI)
 
-                self._desc[s][TRANSISIONS] = transitions
+                self._desc[s][TRANSITIONS] = transitions
 
             def addTransition(self, s1, s2, p):
 
@@ -448,9 +446,9 @@ class MarkovChain:
                 if s2 not in self._desc:
                     raise MarkovChainError(MarkovChainError.NO_STATE.format(s2))
 
-                if s2 in self._desc[s1][TRANSISIONS]:
+                if s2 in self._desc[s1][TRANSITIONS]:
                     raise MarkovChainError(MarkovChainError.DUP_TRANS.format(s2))
-                self._desc[s1][TRANSISIONS][s2] = p
+                self._desc[s1][TRANSITIONS][s2] = p
 
             def build(self):
                 return MarkovChain(self._desc)

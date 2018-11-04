@@ -8,11 +8,8 @@ import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-#import matplotlib.pyplot as plt
 
 def main():
-
-    #S, sigma, pi = read('prova.txt')
 
     # S = ["A", "B", "C"]
     # sigma = [0.2, 0.2, 0.6]
@@ -28,7 +25,9 @@ def main():
     # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
     #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
 
-    mc = MarkovChain(S, sigma, pi)
+    #mc = MarkovChain(S, sigma, pi)
+
+    mc = read('prova.txt')
 
     st = mc.states()
     iD = mc.initialDistribution()
@@ -51,7 +50,7 @@ def main():
     print ""
 
     # Test single state class procedure
-    for s in S:
+    for s in st:
         print s + ': ' + str(mc.getClass(s))
     print ""
 
@@ -63,7 +62,7 @@ def main():
     #         print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
     #         print ""
 
-    for state in S:
+    for state in st:
         print "period(" + state + ")= " + str(mc.period(state))
 
     G = nx.DiGraph()

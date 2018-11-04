@@ -1,5 +1,7 @@
 
 
+from MarkovChain import MarkovChain
+
 K = 2
 
 def _state(i, j, line):
@@ -19,25 +21,24 @@ def _state(i, j, line):
 
 def read(path):
     file = open(path, 'r')
+    builder = MarkovChain.builder()
 
     states = []
     prec = None
+
     transitions = {}
-    initial = {}
 
     for i, line in enumerate(file):
         for j in range(len(line)):
 
             s = _state(i, j, line)
 
-            if i == j == 0:
-                initial[s] = 1
-
-            if s not in transitions:
+            if not s in transitions:
                 transitions[s] = {}
+                builder.addState(s)
 
-            if s not in states:
-                states.append(s)
+            if i == j == 0:
+                builder.setInitial(s, 1)
 
             if prec :
                 if s not in transitions[prec] :
@@ -47,12 +48,8 @@ def read(path):
 
             prec = s
 
-    states = sorted(states)
+    for s1 in transitions:
 
-    pi = []
-
-    for s1 in states:
-        row = []
         edges = 0
         cases = 0
 
@@ -61,25 +58,13 @@ def read(path):
             cases += transitions[s1][s2]
 
         tot = 0
-        for s2 in states:
-            if s2 in transitions[s1]:
-                if edges > 1:
-                    p = transitions[s1][s2]/float(cases)
-                    tot += p
-                    edges -= 1
-                else:
-                    p = 1.0-tot
+        for s2 in transitions[s1]:
+            if edges > 1:
+                p = transitions[s1][s2]/float(cases)
+                tot += p
+                edges -= 1
             else:
-                p = 0
-            row.append(p)
-        pi.append(row)
+                p = 1.0-tot
+            builder.addTransition(s1, s2, p)
 
-    sigma = []
-
-    for s in states:
-        if s in initial:
-            sigma.append(1)
-        else:
-            sigma.append(0)
-
-    return states, sigma, pi
+    return builder.build()
