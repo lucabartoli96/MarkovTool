@@ -226,6 +226,15 @@ class MarkovChain:
                 pi[i, j] = p
         return pi
 
+    def edgeList(self):
+        edges = []
+        for s1 in self._mc:
+            for pair in s1.transitions:
+                s2 = self._mc[pair[0]]
+                weight = pair[1]
+                edges.append((s1.name, s2.name, weight))
+        return tuple(edges)
+
     def _comMat(self, v, visited):
 
         visited[v] = True
