@@ -40,7 +40,7 @@ def main():
     # sigma = [1, 0, 0, 0, 0]
     # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
     #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
-    #
+
     # S = ['A', 'B', 'C', 'D']
     # sigma = [1, 0, 0, 0]
     # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
@@ -49,8 +49,9 @@ def main():
     # mc = MarkovChain(S, sigma, pi)
 
     #mc = read('prova.txt')
+    #mc = read('altraprova.txt')
 
-    mc = read('altraprova.txt')
+    mc = read('prova.txt')
 
     st = mc.states()
     iD = mc.initialDistribution()
@@ -58,51 +59,12 @@ def main():
     tL = mc.transitionsList()
     tM = mc.transitionMatrix()
     eL = mc.edgeList()
-
-    print st
-    print iDA
-    print tL
-    print tM
-    print eL
-
-    # Test Communication Matrix computation
-    C = mc.comMat()
-    print C
-    print ""
-
-
-    # Test classes procedure
     classes = mc.classes()
-    print classes
-    print ""
-
-    # Test single state class procedure
-    for s in st:
-        print s + ': ' + str(mc.getClass(s))
-    print ""
-
-    # For each couple of states prints if they
-    # communicate or they are equivalent
-    # for  s1 in S:
-    #     for s2 in S:
-    #         print s1 + '<' + s2 + ': ' + str(mc.communicate(s1, s2))
-    #         print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
-    #         print ""
-
-    for state in st:
-        print "period(" + state + ")= " + str(mc.period(state))
 
     G = nx.DiGraph()
     G.add_nodes_from(st)
     G.add_weighted_edges_from(eL)
 
-    # pos = nx.spring_layout(G)
-    # nx.draw_networkx_nodes(G, pos, node_size = 500)
-    # nx.draw_networkx_edges(G, pos, arrows=True)
-    # nx.draw_networkx_labels(G, pos)
-    # labels = nx.get_edge_attributes(G,'weight')
-    # nx.draw_networkx_edge_labels(G, pos, font_family='sans-serif',
-    #     edge_labels=labels)
     G.graph['edge'] = {'arrowsize': '1', 'splines': 'curved'}
     G.graph['graph'] = {'scale': '1000'}
 
@@ -187,13 +149,62 @@ def main():
 
             with doc.create(Alignat(numbering=False, escape=False)) as agn:
                 first = True
+                i=0
                 for c in classes:
-                    if not first:
+                    if first:
+                        agn.append('&')
+                    else:
                         agn.append(',\\ ')
+                    if i >= 3:
+                        agn.append('\\\\&')
+                        i = 0
                     agn.append('period({}) = {}'.format(c.replace('#', '\#'), mc.period(c)))
+                    i += 1
                     first = False
 
-        with doc.create(Figure(width="\\textwidth",height="\textheight",keepaspectratio=True)) as pic:
+        with doc.create(Figure()) as pic:
             pic.add_image(image_filename)
 
     doc.generate_pdf('full', clean_tex=False)
+
+
+def dump(mc):
+    st = mc.states()
+    iD = mc.initialDistribution()
+    iDA = mc.initialDistributionArray()
+    tL = mc.transitionsList()
+    tM = mc.transitionMatrix()
+    eL = mc.edgeList()
+
+    print st
+    print iDA
+    print tL
+    print tM
+    print eL
+
+    # Test Communication Matrix computation
+    C = mc.comMat()
+    print C
+    print ""
+
+
+    # Test classes procedure
+    classes = mc.classes()
+    print classes
+    print ""
+
+    # Test single state class procedure
+    for s in st:
+        print s + ': ' + str(mc.getClass(s))
+    print ""
+
+    # For each couple of states prints if they
+    # communicate or they are equivalent
+    for  s1 in S:
+        for s2 in S:
+            print s1 + '<' + s2 + ': ' + str(mc.communicate(s1, s2))
+            print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
+            print ""
+
+    for state in st:
+        print "period(" + state + ")= " + str(mc.period(state))

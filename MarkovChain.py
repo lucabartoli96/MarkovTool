@@ -1,6 +1,7 @@
 
 import numpy as np
-import sys
+
+EPSILON = 1.11022302463e-16
 
 INITIAL = 'initial'
 TRANSITIONS = 'transitions'
@@ -138,7 +139,7 @@ class MarkovChain:
 
                     if tot != 1.0:
                         raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, tot))
-            else:            #agn.extend([Matrix(C), Matrix(tM)])
+            else:
                 raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, 0))
 
             map[s] = i
