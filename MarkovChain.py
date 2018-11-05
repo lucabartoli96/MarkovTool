@@ -61,6 +61,13 @@ class MarkovChain:
                     sigma[pair[1]] = pair[0]
                 return sigma
 
+            def toMap(self):
+                sigma = {}
+                for pair in self._sigma:
+                    p = pair[0]
+                    s = mc._mc[pair[1]].name
+                    sigma[s] = p
+                return sigma
 
         class MarkovChainState:
 
@@ -131,7 +138,7 @@ class MarkovChain:
 
                     if tot != 1.0:
                         raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, tot))
-            else:
+            else:            #agn.extend([Matrix(C), Matrix(tM)])
                 raise MarkovChainError(MarkovChainError.SUM_ROW_PI.format(s, 0))
 
             map[s] = i
@@ -218,9 +225,21 @@ class MarkovChain:
     def states(self):
         return tuple(s.name for s in self._mc)
 
-
     def initialDistribution(self):
+        return self._sigma.toMap()
+
+    def initialDistributionArray(self):
         return self._sigma.toArray()
+
+    def transitionsList(self):
+        transitions = {}
+        for s1 in self._mc:
+            transitions[s1.name] = {}
+            for pair in s1.transitions:
+                s2 = self._mc[pair[0]]
+                p  = pair[1]
+                transitions[s1.name][s2.name]=p
+        return transitions
 
     def transitionMatrix(self):
         pi = np.zeros((self.size, self.size))
