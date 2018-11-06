@@ -204,8 +204,6 @@ class MarkovChain:
         for i, p in enumerate(initialDist):
             sigma[i] = p
 
-        print sigma
-
         return tuple(mc), Sigma(sigma)
 
 

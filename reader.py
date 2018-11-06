@@ -4,6 +4,8 @@ from MarkovChain import MarkovChain
 
 from fractions import Fraction
 
+import io
+
 K = 2
 
 def _state(i, j, line):
@@ -22,7 +24,7 @@ def _state(i, j, line):
 
 
 def read(path):
-    file = open(path, 'r')
+    file = io.open(path, 'r', encoding='utf-8')
     builder = MarkovChain.builder()
 
     states = []
@@ -51,7 +53,7 @@ def read(path):
             prec = s
 
     for s1 in transitions:
-        
+
         cases = 0
 
         for s2 in transitions[s1]:

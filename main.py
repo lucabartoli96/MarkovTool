@@ -10,25 +10,111 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
-                    Math, TikZ, Axis, Plot, Figure, Matrix, Alignat
+                    Math, TikZ, Axis, Plot, Figure, Matrix, Alignat, LongTable,\
+                    MultiColumn
 from pylatex.utils import italic
 
-def toLatexSet(elems, hintLen=None):
-    data = ['\{']
+#TODO far formattare per bene le stringhe a questa funzione
+def toLatexSet(elems, beginWith=None, hintLen=None):
+
+    def append(data, elem, canBreak):
+        pass
+
+
+    if beginWith:
+        data = beginWith
+    else:
+        data = []
+    data.append('\{')
+
+    i = len(data)
+    length = dataLen(0, data)
+
     if hintLen:
         data.append('&')
-    i = 0
     for elem in elems:
-        data.append(elem)
+        data.append(str(elem))
         if elem != elems[-1]:
             data.append(',')
-        if hintLen and i >= hintLen:
+        if hintLen and length >= hintLen:
             data.append(' \\\\ ')
             data.append('& ')
-            i=0
-        i += 1
+
     data.append('\}')
     return data
+
+def toLatexState(s):
+    return s.replace('#', '\#')
+
+def toLatexProb(p):
+    p = str(p)
+    if '/' in p:
+        i = p.index('/')
+        p = '\\frac{' + p[:i] + '}{' + p[i+1:] + '}'
+    return p
+
+def stateSet(doc, st):
+    with doc.create(Subsection('States set')):
+        data = toLatexSet(list(toLatexState(s) for s in st),
+                          beginWith=['S', '='],
+                          hintLen=25)
+
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            agn.extend(data)
+
+
+def initialDistribution(doc, iD):
+    with doc.create(Subsection('Initial Disribution')):
+        data = []
+        for s in iD:
+            data.append('\sigma_{%s}=%0.2f' % (s.replace('#', '\#'), iD[s]))
+            data.append(',')
+        del data[-1]
+
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            agn.extend(data)
+
+
+def transitionMatrix(doc, tM):
+    with doc.create(Subsection('Transitions')):
+        data = ['\setcounter{MaxMatrixCols}{20}', '\Pi=']
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            agn.extend(data)
+            agn.append(Matrix(tM, mtype='b'))
+
+
+def transitionList(doc, tL):
+    with doc.create(Subsection('Transitions')):
+        data = ['\Pi:\\\\']
+        outer = []
+        i=0
+        for s1 in tL:
+            inner = []
+            for s2 in tL[s1]:
+                inner.append('%s: %0.2f' % (toLatexState(s2), tL[s1][s2]))
+
+            innerString = ''.join(toLatexSet(inner,
+                        beginWith=[toLatexState(s1), '\\rightarrow']))
+            outer.append(innerString)
+        data = toLatexSet(outer, hintLen=3)
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            agn.extend(data)
+
+
+def edgeList(doc, eL):
+    with doc.create(Subsection('Edges')):
+        with doc.create(LongTable("l l l")) as data_table:
+            data_table.add_hline()
+            data_table.add_row( ['$s_i$', '$s_j$', '$p$'], escape=False)
+            data_table.add_hline()
+            data_table.end_table_header()
+            data_table.add_hline()
+            data_table.end_table_last_footer()
+            for triplet in eL:
+                data_table.add_row(['$' +  toLatexState(triplet[0]) + '$',
+                                    '$' +  toLatexState(triplet[1]) + '$',
+                                    '$' +  toLatexProb(triplet[2]) + '$'],
+                                    escape=False)
 
 def main():
 
@@ -41,15 +127,16 @@ def main():
     # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
     #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
 
-    # S = ['A', 'B', 'C', 'D']
-    # sigma = [1, 0, 0, 0]
-    # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
-    #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
+    S = ['A', 'B', 'C', 'D']
+    sigma = [1, 0, 0, 0]
+    pi = [[0, 0, 0, 1], [0, 0, 0, 1],
+          [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
 
-    # mc = MarkovChain(S, sigma, pi)
+    mc = MarkovChain(S, sigma, pi)
 
-    #mc = read('prova.txt')
-    mc = read('MarkovChain.py')
+    mc = read('prova.txt')
+    #mc = read('ungaretti.txt')
+    #mc = read('reader.py')
 
     st = mc.states()
     iD = mc.initialDistribution()
@@ -60,6 +147,7 @@ def main():
     classes = mc.classes()
 
     G = nx.DiGraph()
+
     G.add_nodes_from(st)
     G.add_weighted_edges_from(eL)
 
@@ -77,60 +165,20 @@ def main():
     A.draw('image.png')
 
     image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
+
     doc = Document()
 
     with doc.create(Section('Markov Chain')):
-        doc.append('States set:')
 
-        data = ['S', '='] + toLatexSet(list(s.replace('#', '\#') for s in st), 25)
-
-        with doc.create(Alignat(numbering=False, escape=False)) as agn:
-            agn.extend(data)
-
-        doc.append('Initial distribution: ')
-
-        data = []
-        for s in iD:
-            data.append('\sigma_{%s}=%0.2f' % (s.replace('#', '\#'), iD[s]))
-            data.append(',')
-        del data[-1]
-
-        with doc.create(Alignat(numbering=False, escape=False)) as agn:
-            agn.extend(data)
-
-        doc.append('Transition matrix: ')
+        stateSet(doc, st)
+        initialDistribution(doc, iD)
 
         if mc.size <= 20:
-            data = ['\setcounter{MaxMatrixCols}{20}', '\Pi=']
-            with doc.create(Alignat(numbering=False, escape=False)) as agn:
-                agn.extend(data)
-                agn.append(Matrix(tM, mtype='b'))
+            transitionMatrix(doc, tM)
         else:
-            data = ['\Pi:\\\\']
-            outer = []
-            i=0
-            for s1 in tL:
-                inner = []
-                for s2 in tL[s1]:
-                    inner.append('%s: %0.2f' % (s2.replace('#', '\#'), tL[s1][s2]))
+            transitionList(doc, tL)
 
-                innerString = ''.join([s1.replace('#', '\#'), '\\rightarrow'] + toLatexSet(inner))
-                outer.append(innerString)
-            data = toLatexSet(outer, 3)
-
-            with doc.create(Alignat(numbering=False, escape=False)) as agn:
-                agn.extend(data)
-
-        doc.append('Edges list: ')
-
-        elems = []
-        for triplet in eL:
-            s1 = triplet[0].replace('#', '\#')
-            s2 = triplet[1].replace('#', '\#')
-            p  = triplet[2]
-            elems.append('(%s, %s, %0.2f)' % (s1, s2, p))
-        with doc.create(Alignat(numbering=False, escape=False)) as agn:
-            agn.extend(toLatexSet(elems, 5))
+        edgeList(doc, eL)
 
         with doc.create(Subsection('Classes')):
 
@@ -140,7 +188,7 @@ def main():
                     elems = []
                     for s in classes[c]:
                         elems.append(s.replace('#', '\#'))
-                    agn.extend(toLatexSet(elems, 15))
+                    agn.extend(toLatexSet(elems, hintLen=15))
                     agn.append('\\\\')
 
             doc.append('where: ')
