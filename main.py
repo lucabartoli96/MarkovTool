@@ -51,8 +51,6 @@ def main():
     #mc = read('prova.txt')
     #mc = read('altraprova.txt')
 
-    mc = read('prova.txt')
-
     st = mc.states()
     iD = mc.initialDistribution()
     iDA = mc.initialDistributionArray()
