@@ -49,7 +49,7 @@ def main():
     # mc = MarkovChain(S, sigma, pi)
 
     #mc = read('prova.txt')
-    #mc = read('altraprova.txt')
+    mc = read('MarkovChain.py')
 
     st = mc.states()
     iD = mc.initialDistribution()

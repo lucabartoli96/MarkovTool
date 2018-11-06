@@ -2,6 +2,8 @@
 
 from MarkovChain import MarkovChain
 
+from fractions import Fraction
+
 K = 2
 
 def _state(i, j, line):
@@ -49,22 +51,13 @@ def read(path):
             prec = s
 
     for s1 in transitions:
-
-        edges = 0
+        
         cases = 0
 
         for s2 in transitions[s1]:
-            edges += 1
             cases += transitions[s1][s2]
 
-        tot = 0
         for s2 in transitions[s1]:
-            if edges > 1:
-                p = transitions[s1][s2]/float(cases)
-                tot += p
-                edges -= 1
-            else:
-                p = 1.0-tot
-            builder.addTransition(s1, s2, p)
+            builder.addTransition(s1, s2, Fraction(transitions[s1][s2], cases))
 
     return builder.build()
