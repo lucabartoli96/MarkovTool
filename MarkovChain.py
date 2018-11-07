@@ -1,8 +1,6 @@
 
 import numpy as np
 
-EPSILON = 1.11022302463e-16
-
 INITIAL = 'initial'
 TRANSITIONS = 'transitions'
 

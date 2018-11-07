@@ -14,33 +14,43 @@ from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
                     MultiColumn
 from pylatex.utils import italic
 
-#TODO far formattare per bene le stringhe a questa funzione
+
 def toLatexSet(elems, beginWith=None, hintLen=None):
 
-    def append(data, elem, canBreak):
-        pass
-
-
-    if beginWith:
-        data = beginWith
-    else:
-        data = []
-    data.append('\{')
-
-    i = len(data)
-    length = dataLen(0, data)
-
-    if hintLen:
-        data.append('&')
-    for elem in elems:
-        data.append(str(elem))
-        if elem != elems[-1]:
-            data.append(',')
-        if hintLen and length >= hintLen:
+    def append(length, data, elem, canBreak):
+        data.append(elem)
+        length += len(elem)
+        if hintLen and length >= hintLen and canBreak:
             data.append(' \\\\ ')
             data.append('& ')
+            length = 0
+        return length
 
-    data.append('\}')
+    data = []
+    length = 0
+
+    if beginWith:
+        for elem in beginWith:
+            append(length, data, elem, False)
+
+    if not hintLen:
+        length = append(length, data, '\left\{ ', False)-6
+    else:
+        length = append(length, data, '\{ ', False)
+
+    if hintLen:
+        append(length, data, '&', False)
+    for elem in elems:
+        length = append(length, data, str(elem), False)
+
+        if elem != elems[-1]:
+            length = append(length, data, ',\ ', True)
+
+    if not hintLen:
+        append(length, data, '\\right\}', False)
+    else:
+        append(length, data, '\}', False)
+
     return data
 
 def toLatexState(s):
@@ -57,7 +67,7 @@ def stateSet(doc, st):
     with doc.create(Subsection('States set')):
         data = toLatexSet(list(toLatexState(s) for s in st),
                           beginWith=['S', '='],
-                          hintLen=25)
+                          hintLen=60)
 
         with doc.create(Alignat(numbering=False, escape=False)) as agn:
             agn.extend(data)
@@ -67,8 +77,8 @@ def initialDistribution(doc, iD):
     with doc.create(Subsection('Initial Disribution')):
         data = []
         for s in iD:
-            data.append('\sigma_{%s}=%0.2f' % (s.replace('#', '\#'), iD[s]))
-            data.append(',')
+            data.append('\sigma_{%s}=%0.2f' % (toLatexState(s), iD[s]))
+            data.append(',\ ')
         del data[-1]
 
         with doc.create(Alignat(numbering=False, escape=False)) as agn:
@@ -86,19 +96,15 @@ def transitionMatrix(doc, tM):
 def transitionList(doc, tL):
     with doc.create(Subsection('Transitions')):
         data = ['\Pi:\\\\']
-        outer = []
         i=0
         for s1 in tL:
             inner = []
             for s2 in tL[s1]:
-                inner.append('%s: %0.2f' % (toLatexState(s2), tL[s1][s2]))
+                inner.append('%s: %s' % (toLatexState(s2), toLatexProb(tL[s1][s2])))
 
             innerString = ''.join(toLatexSet(inner,
                         beginWith=[toLatexState(s1), '\\rightarrow']))
-            outer.append(innerString)
-        data = toLatexSet(outer, hintLen=3)
-        with doc.create(Alignat(numbering=False, escape=False)) as agn:
-            agn.extend(data)
+            doc.append(Math(data=innerString, escape=False))
 
 
 def edgeList(doc, eL):
@@ -115,6 +121,34 @@ def edgeList(doc, eL):
                                     '$' +  toLatexState(triplet[1]) + '$',
                                     '$' +  toLatexProb(triplet[2]) + '$'],
                                     escape=False)
+
+
+def classesSection(doc, classes):
+    with doc.create(Subsection('Classes')):
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            for c in classes:
+                elems = []
+                for s in classes[c]:
+                    elems.append(toLatexState(s))
+                bW = '\\left[%s\\right] =' % toLatexState(c)
+                agn.extend(toLatexSet(elems, beginWith=[bW],hintLen=60))
+                agn.append('\\\\')
+
+
+def periods(doc, classes, mc):
+    with doc.create(Subsection('Periods')):
+        with doc.create(LongTable("l l")) as data_table:
+            data_table.add_hline()
+            data_table.add_row( ['$s$', '$period(s)$'], escape=False)
+            data_table.add_hline()
+            data_table.end_table_header()
+            data_table.add_hline()
+            data_table.end_table_last_footer()
+            for c in classes:
+                data_table.add_row(['$' + toLatexState(c) + '$',
+                                    '$' + str(mc.period(c)) + '$'],
+                                    escape=False)
+
 
 def main():
 
@@ -179,34 +213,8 @@ def main():
             transitionList(doc, tL)
 
         edgeList(doc, eL)
-
-        with doc.create(Subsection('Classes')):
-
-            with doc.create(Alignat(numbering=False, escape=False)) as agn:
-                for c in classes:
-                    agn.append('\\left[%s\\right] =' % c.replace('#', '\#'))
-                    elems = []
-                    for s in classes[c]:
-                        elems.append(s.replace('#', '\#'))
-                    agn.extend(toLatexSet(elems, hintLen=15))
-                    agn.append('\\\\')
-
-            doc.append('where: ')
-
-            with doc.create(Alignat(numbering=False, escape=False)) as agn:
-                first = True
-                i=0
-                for c in classes:
-                    if first:
-                        agn.append('&')
-                    else:
-                        agn.append(',\\ ')
-                    if i >= 3:
-                        agn.append('\\\\&')
-                        i = 0
-                    agn.append('period({}) = {}'.format(c.replace('#', '\#'), mc.period(c)))
-                    i += 1
-                    first = False
+        classesSection(doc, classes)
+        periods(doc, classes, mc)
 
         with doc.create(Figure()) as pic:
             pic.add_image(image_filename)
