@@ -219,6 +219,11 @@ class MarkovChain:
         return len(self._mc)
 
 
+    def index(self, name):
+        for i, s in enumerate(self._mc):
+            if s.name == name:
+                return i
+
     def states(self):
         return tuple(s.name for s in self._mc)
 
@@ -353,8 +358,23 @@ class MarkovChain:
 
         return classes_named
 
+    def _recursiveClasses(self):
+        classes = self._classes()
+        recursive = []
+        for c in classes:
+            isRecursive = True
+            for s in classes:
+                if c != s and self._communicate(c, s):
+                    isRecursive = False
+                    break
+            if isRecursive:
+                recursive.append(c)
+        return recursive
 
-    def _communicate(self, v, visited, dest):
+    def recursiveClasses(self):
+        return tuple(self._mc[s].name for s in self._recursiveClasses())
+
+    def _communicateRec(self, v, visited, dest):
 
         visited[v] = True
 
@@ -362,27 +382,21 @@ class MarkovChain:
             return True
 
         for u in self._mc[v].adj:
+
             if not visited[u]:
-                if self._communicate(u, visited, dest):
+                if self._communicateRec(u, visited, dest):
                     return True
 
         return False
 
-
-    def index(self, name):
-        for i, s in enumerate(self._mc):
-            if s.name == name:
-                return i
-
+    def _communicate(self, source, dest):
+        visited = np.zeros(self.size, dtype=bool)
+        return self._communicateRec(source, visited, dest)
 
     def communicate(self, s1, s2):
-
         source = self.index(s1)
         dest   = self.index(s2)
-
-        visited = np.zeros(self.size, dtype=bool)
-
-        return self._communicate(source, visited, dest)
+        return self._communicate(source, dest)
 
 
     def equivalent(self, s1, s2):

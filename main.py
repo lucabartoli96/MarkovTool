@@ -157,7 +157,7 @@ def classesSection(doc, classes):
 
 
 def periods(doc, classes, mc):
-    with doc.create(Subsection('Periods')):
+    with doc.create(Subsection('Periodicity')):
         with doc.create(LongTable("l l")) as data_table:
             data_table.add_hline()
             data_table.add_row( ['$s$', '$period(s)$'], escape=False)
@@ -166,9 +166,27 @@ def periods(doc, classes, mc):
             data_table.add_hline()
             data_table.end_table_last_footer()
             for c in classes:
-                data_table.add_row(['$' + toLatexState(c) + '$',
-                                    '$' + str(mc.period(c)) + '$'],
-                                    escape=False)
+                row = ['$' + toLatexState(c) + '$',
+                       '$' + str(mc.period(c)) + '$']
+
+                data_table.add_row(row, escape=False)
+
+
+def periodAndRecur(doc, classes, recursive, mc):
+    with doc.create(Subsection('Periodicity and Recurrence')):
+        with doc.create(LongTable("l l l")) as data_table:
+            data_table.add_hline()
+            data_table.add_row( ['$s$', '$period(s)$', '$Recurrence$'], escape=False)
+            data_table.add_hline()
+            data_table.end_table_header()
+            data_table.add_hline()
+            data_table.end_table_last_footer()
+            for c in classes:
+                row = ['$' + toLatexState(c) + '$',
+                       '$' + str(mc.period(c)) + '$',
+                       str(c in recursive)]
+
+                data_table.add_row(row, escape=False)
 
 
 def createGraphImage(st, eL):
@@ -176,7 +194,7 @@ def createGraphImage(st, eL):
     G.add_nodes_from(st)
     G.add_weighted_edges_from(eL)
     G.graph['edge'] = {'arrowsize': '1', 'splines': 'curved'}
-    G.graph['graph'] = {'scale': '1000'}
+    G.graph['graph'] = {'scale': '1000000'}
     A = to_agraph(G)
     A.layout('dot')
     for triplet in eL:
@@ -196,16 +214,16 @@ def main():
     # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
     #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
 
-    S = ['A', 'B', 'C', 'D']
-    sigma = [1, 0, 0, 0]
-    pi = [[0, 0, 0, 1], [0, 0, 0, 1],
-          [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
+    # S = ['A', 'B', 'C', 'D']
+    # sigma = [1, 0, 0, 0]
+    # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
+    #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
 
-    mc = MarkovChain(S, sigma, pi)
+    # mc = MarkovChain(S, sigma, pi)
 
-    mc = read('prova.txt')
+    #mc = read('prova.txt')
     #mc = read('ungaretti.txt')
-    #mc = read('reader.py')
+    mc = read('dante.txt')
 
     st = mc.states()
     iD = mc.initialDistribution()
@@ -232,8 +250,9 @@ def main():
 
         edgeList(doc, eL)
         classesSection(doc, classes)
-        periods(doc, classes, mc)
+        periodAndRecur(doc, classes, recursive, mc)
 
+        createGraphImage(st, eL)
         with doc.create(Figure()) as pic:
             pic.add_image(image_filename)
 
