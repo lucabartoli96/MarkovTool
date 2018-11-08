@@ -202,6 +202,13 @@ def createGraphImage(st, eL):
         e.attr['label'] = triplet[2]
     A.draw('image.png')
 
+def communicationMatrix(doc, cM):
+    with doc.create(Subsection('Communication Matrix')):
+        data = ['\setcounter{MaxMatrixCols}{20}', 'C=']
+        with doc.create(Alignat(numbering=False, escape=False)) as agn:
+            agn.extend(data)
+            agn.append(Matrix(cM, mtype='b'))
+
 
 def main():
 
@@ -209,21 +216,21 @@ def main():
     # sigma = [0.2, 0.2, 0.6]
     # pi = [[0.5, 0.5, 0], [0.1, 0, 0.9], [0, 0, 1]]
 
-    # S = ['A', 'B', 'C', 'D', 'E']
-    # sigma = [1, 0, 0, 0, 0]
-    # pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
-    #       [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
+    S = ['A', 'B', 'C', 'D', 'E']
+    sigma = [1, 0, 0, 0, 0]
+    pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
+          [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
 
     # S = ['A', 'B', 'C', 'D']
     # sigma = [1, 0, 0, 0]
     # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
     #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
 
-    # mc = MarkovChain(S, sigma, pi)
+    mc = MarkovChain(S, sigma, pi)
 
     #mc = read('prova.txt')
     #mc = read('ungaretti.txt')
-    mc = read('dante.txt')
+    #mc = read('dante.txt')
 
     st = mc.states()
     iD = mc.initialDistribution()
@@ -231,6 +238,7 @@ def main():
     tL = mc.transitionsList()
     tM = mc.transitionMatrix()
     eL = mc.edgeList()
+    cM = mc.communicationMatrix()
     classes = mc.classes()
     recursive = mc.recursiveClasses()
 
@@ -251,6 +259,9 @@ def main():
         edgeList(doc, eL)
         classesSection(doc, classes)
         periodAndRecur(doc, classes, recursive, mc)
+
+        if mc.size <= 20:
+            communicationMatrix(doc, cM)
 
         createGraphImage(st, eL)
         with doc.create(Figure()) as pic:

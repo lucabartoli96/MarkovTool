@@ -261,16 +261,16 @@ class MarkovChain:
                 edges.append((s1.name, s2.name, weight))
         return tuple(edges)
 
-    def _comMat(self, v, visited):
+    def _communicationMatrix(self, v, visited):
 
         visited[v] = True
 
         for u in self._mc[v].adj:
             if not visited[u]:
-                self._comMat(u, visited)
+                self._communicationMatrix(u, visited)
 
 
-    def comMat(self):
+    def communicationMatrix(self):
 
         if not self._C:
 
@@ -279,7 +279,7 @@ class MarkovChain:
             self._C = np.zeros((self.size, self.size), dtype=bool)
 
             for v in range(self.size):
-                self._comMat(v, self._C[v])
+                self._communicationMatrix(v, self._C[v])
 
             self._C.flags.writeable = False
 
