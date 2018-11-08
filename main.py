@@ -11,7 +11,7 @@ import matplotlib.image as mpimg
 
 from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
                     Math, TikZ, Axis, Plot, Figure, Matrix, Alignat, LongTable,\
-                    MultiColumn
+                    MultiColumn, NewPage
 from pylatex.utils import italic
 
 
@@ -74,7 +74,7 @@ def stateSet(doc, st):
 
 
 def initialDistribution(doc, iD):
-    with doc.create(Subsection('Initial Disribution')):
+    with doc.create(Subsection('Initial Distribution')):
         data = []
         for s in iD:
             data.append('\sigma_{%s}=%0.2f' % (toLatexState(s), iD[s]))
@@ -108,19 +108,40 @@ def transitionList(doc, tL):
 
 
 def edgeList(doc, eL):
+    doc.append(NewPage())
     with doc.create(Subsection('Edges')):
-        with doc.create(LongTable("l l l")) as data_table:
+        with doc.create(LongTable("l l l l l l l l l l l l l")) as data_table:
             data_table.add_hline()
-            data_table.add_row( ['$s_i$', '$s_j$', '$p$'], escape=False)
+            data_table.add_row( ['$s$', '$s\'$', '$p$', ' ', ' ']*2 + ['$s$', '$s\'$', '$p$'], escape=False)
             data_table.add_hline()
             data_table.end_table_header()
             data_table.add_hline()
             data_table.end_table_last_footer()
-            for triplet in eL:
-                data_table.add_row(['$' +  toLatexState(triplet[0]) + '$',
-                                    '$' +  toLatexState(triplet[1]) + '$',
-                                    '$' +  toLatexProb(triplet[2]) + '$'],
-                                    escape=False)
+            for i in range(0, len(eL), 3):
+                row = []
+
+                triplet = eL[i]
+                row += ['$' +  toLatexState(triplet[0]) + '$',
+                        '$' +  toLatexState(triplet[1]) + '$',
+                        '$' +  toLatexProb(triplet[2]) + '$',
+                        ' ', ' ']
+                if i+1 < len(eL):
+                    triplet = eL[i+1]
+                    row += ['$' +  toLatexState(triplet[0]) + '$',
+                            '$' +  toLatexState(triplet[1]) + '$',
+                            '$' +  toLatexProb(triplet[2]) + '$',
+                            ' ', ' ']
+                    if i+2 < len(eL):
+                        triplet = eL[i+2]
+                        row += ['$' +  toLatexState(triplet[0]) + '$',
+                                '$' +  toLatexState(triplet[1]) + '$',
+                                '$' +  toLatexProb(triplet[2]) + '$']
+                    else:
+                        row += [' ',]*3
+                else:
+                    row += [' ',]*8
+
+                data_table.add_row(row, escape=False)
 
 
 def classesSection(doc, classes):
@@ -148,6 +169,20 @@ def periods(doc, classes, mc):
                 data_table.add_row(['$' + toLatexState(c) + '$',
                                     '$' + str(mc.period(c)) + '$'],
                                     escape=False)
+
+
+def createGraphImage(st, eL):
+    G = nx.DiGraph()
+    G.add_nodes_from(st)
+    G.add_weighted_edges_from(eL)
+    G.graph['edge'] = {'arrowsize': '1', 'splines': 'curved'}
+    G.graph['graph'] = {'scale': '1000'}
+    A = to_agraph(G)
+    A.layout('dot')
+    for triplet in eL:
+        e = A.get_edge(triplet[0], triplet[1])
+        e.attr['label'] = triplet[2]
+    A.draw('image.png')
 
 
 def main():
@@ -179,24 +214,7 @@ def main():
     tM = mc.transitionMatrix()
     eL = mc.edgeList()
     classes = mc.classes()
-
-    G = nx.DiGraph()
-
-    G.add_nodes_from(st)
-    G.add_weighted_edges_from(eL)
-
-    G.graph['edge'] = {'arrowsize': '1', 'splines': 'curved'}
-    G.graph['graph'] = {'scale': '1000'}
-
-    A = to_agraph(G)
-    A.layout('dot')
-
-    # set edge labels
-    for triplet in eL:
-        e = A.get_edge(triplet[0], triplet[1])
-        e.attr['label'] = triplet[2]
-
-    A.draw('image.png')
+    recursive = mc.recursiveClasses()
 
     image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
 
