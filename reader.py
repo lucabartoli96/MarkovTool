@@ -5,6 +5,22 @@ from MarkovChain import MarkovChain
 from fractions import Fraction
 
 import io
+import json
+
+SS = 'stateSet'
+ID = 'initialDistribution'
+TM = 'transitionMatrix'
+ARRAY_KEYS = (SS, ID, TM)
+
+
+#TODO: Testare a fondo
+def jsonToMarkovChain(path):
+    with open(path) as f:
+        data = json.load(f)
+    if all(k in data for k in ARRAY_KEYS):
+        return MarkovChain(data[SS], data[ID], data[TM])
+    else:
+        return MarkovChain(data)
 
 K = 2
 
@@ -22,9 +38,14 @@ def _state(i, j, line):
 
     return s
 
+# 'ISO-8859-1'
+def txtToMarkovChain(path, encoding=None):
 
-def read(path):
-    file = io.open(path, 'r', encoding='utf-8')
+    if encoding:
+        file = io.open(path, 'r', encoding=encoding)
+    else:
+        file = open(path, 'r')
+
     builder = MarkovChain.builder()
 
     states = []

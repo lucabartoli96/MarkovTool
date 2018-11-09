@@ -1,6 +1,6 @@
 
 from MarkovChain import MarkovChain
-from reader import read
+import reader as mcr
 import time
 import os
 
@@ -41,7 +41,7 @@ def toLatexSet(elems, beginWith=None, hintLen=None):
     if hintLen:
         append(length, data, '&', False)
     for elem in elems:
-        length = append(length, data, str(elem), False)
+        length = append(length, data, unicode(elem), False)
 
         if elem != elems[-1]:
             length = append(length, data, ',\ ', True)
@@ -210,26 +210,31 @@ def communicationMatrix(doc, cM):
             agn.append(Matrix(cM, mtype='b'))
 
 
-def main():
+def main(argv):
 
-    # S = ["A", "B", "C"]
-    # sigma = [0.2, 0.2, 0.6]
-    # pi = [[0.5, 0.5, 0], [0.1, 0, 0.9], [0, 0, 1]]
+    if len(argv) == 1 :
+        raise ValueError('No file name specified')
 
-    S = ['A', 'B', 'C', 'D', 'E']
-    sigma = [1, 0, 0, 0, 0]
-    pi = [[0.25, 0.75, 0, 0, 0], [0.5, 0.5, 0, 0, 0],
-          [0, 0, 1, 0, 0], [0, 0, 0.3, 0.7, 0], [1, 0, 0, 0, 0]]
+    fileName = argv[1]
+    path, fileExtension = os.path.splitext(fileName)
+    fileExtension = fileExtension[1:]
+
+    if fileExtension.lower() == 'json':
+        mc = mcr.jsonToMarkovChain(fileName)
+    else:
+        if len(argv) > 2:
+            mc = mcr.txtToMarkovChain(fileName, encoding=argv[2])
+        else:
+            mc = mcr.txtToMarkovChain(fileName)
+
 
     # S = ['A', 'B', 'C', 'D']
-    # sigma = [1, 0, 0, 0]
-    # pi = [[0, 0, 0, 1], [0, 0, 0, 1],
-    #       [0.5, 0.5, 0, 0], [0, 0, 1, 0]]
+    # sigma =
+    # pi = 
 
-    mc = MarkovChain(S, sigma, pi)
+    # mc = MarkovChain(S, sigma, pi)
 
     #mc = read('prova.txt')
-    #mc = read('ungaretti.txt')
     #mc = read('dante.txt')
 
     st = mc.states()
@@ -267,7 +272,7 @@ def main():
         with doc.create(Figure()) as pic:
             pic.add_image(image_filename)
 
-    doc.generate_pdf('full', clean_tex=False)
+    doc.generate_pdf(path, clean_tex=False)
 
 
 def dump(mc):
