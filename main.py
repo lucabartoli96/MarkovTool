@@ -1,14 +1,16 @@
 
 from MarkovChain import MarkovChain
-import reader as mcr
+import MarkovChainIO as mcio
 import time
 import os
 
+# Graph visualization libs
 import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+# Python to latex libs
 from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
                     Math, TikZ, Axis, Plot, Figure, Matrix, Alignat, LongTable,\
                     MultiColumn, NewPage
@@ -201,6 +203,7 @@ def createGraphImage(st, eL):
         e = A.get_edge(triplet[0], triplet[1])
         e.attr['label'] = triplet[2]
     A.draw('image.png')
+    
 
 def communicationMatrix(doc, cM):
     with doc.create(Subsection('Communication Matrix')):
@@ -220,22 +223,13 @@ def main(argv):
     fileExtension = fileExtension[1:]
 
     if fileExtension.lower() == 'json':
-        mc = mcr.jsonToMarkovChain(fileName)
+        mc = mcio.jsonToMarkovChain(fileName)
     else:
         if len(argv) > 2:
-            mc = mcr.txtToMarkovChain(fileName, encoding=argv[2])
+            mc = mcio.txtToMarkovChain(fileName, encoding=argv[2])
         else:
-            mc = mcr.txtToMarkovChain(fileName)
+            mc = mcio.txtToMarkovChain(fileName)
 
-
-    # S = ['A', 'B', 'C', 'D']
-    # sigma =
-    # pi = 
-
-    # mc = MarkovChain(S, sigma, pi)
-
-    #mc = read('prova.txt')
-    #mc = read('dante.txt')
 
     st = mc.states()
     iD = mc.initialDistribution()

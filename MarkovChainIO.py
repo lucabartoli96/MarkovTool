@@ -38,7 +38,7 @@ def _state(i, j, line):
 
     return s
 
-# 'ISO-8859-1'
+# Possible encodings: 'ISO-8859-1', 'UTF-8'
 def txtToMarkovChain(path, encoding=None):
 
     if encoding:
