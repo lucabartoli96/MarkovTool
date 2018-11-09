@@ -2,7 +2,7 @@
 from MarkovChain import MarkovChain
 import MarkovChainIO as mcio
 import time
-import os
+import os, sys
 
 # Graph visualization libs
 import networkx as nx
@@ -13,11 +13,11 @@ import matplotlib.image as mpimg
 # Python to latex libs
 from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
                     Math, TikZ, Axis, Plot, Figure, Matrix, Alignat, LongTable,\
-                    MultiColumn, NewPage
-from pylatex.utils import italic
+                    MultiColumn, NewPage, Package, NoEscape, LineBreak
+from pylatex.utils import italic, bold
 
 
-def toLatexSet(elems, beginWith=None, hintLen=None):
+def toLatexSet(elems, beginWith=None, hintLen=None, size=''):
 
     def append(length, data, elem, canBreak):
         data.append(elem)
@@ -38,12 +38,12 @@ def toLatexSet(elems, beginWith=None, hintLen=None):
     if not hintLen:
         length = append(length, data, '\left\{ ', False)-6
     else:
-        length = append(length, data, '\{ ', False)
+        length = append(length, data, size + '\{ ', False)
 
     if hintLen:
         append(length, data, '&', False)
     for elem in elems:
-        length = append(length, data, unicode(elem), False)
+        length = append(length, data, elem, False)
 
         if elem != elems[-1]:
             length = append(length, data, ',\ ', True)
@@ -51,8 +51,7 @@ def toLatexSet(elems, beginWith=None, hintLen=None):
     if not hintLen:
         append(length, data, '\\right\}', False)
     else:
-        append(length, data, '\}', False)
-
+        length = append(length, data, size + '\}', False)
     return data
 
 def toLatexState(s):
@@ -70,7 +69,6 @@ def stateSet(doc, st):
         data = toLatexSet(list(toLatexState(s) for s in st),
                           beginWith=['S', '='],
                           hintLen=60)
-
         with doc.create(Alignat(numbering=False, escape=False)) as agn:
             agn.extend(data)
 
@@ -105,8 +103,11 @@ def transitionList(doc, tL):
                 inner.append('%s: %s' % (toLatexState(s2), toLatexProb(tL[s1][s2])))
 
             innerString = ''.join(toLatexSet(inner,
+                        size = '\\Bigg',
+                        hintLen=120,
                         beginWith=[toLatexState(s1), '\\rightarrow']))
-            doc.append(Math(data=innerString, escape=False))
+            with doc.create(Alignat(numbering=False, escape=False)) as agn:
+                agn.extend([innerString])
 
 
 def edgeList(doc, eL):
@@ -203,7 +204,7 @@ def createGraphImage(st, eL):
         e = A.get_edge(triplet[0], triplet[1])
         e.attr['label'] = triplet[2]
     A.draw('image.png')
-    
+
 
 def communicationMatrix(doc, cM):
     with doc.create(Subsection('Communication Matrix')):
@@ -211,6 +212,12 @@ def communicationMatrix(doc, cM):
         with doc.create(Alignat(numbering=False, escape=False)) as agn:
             agn.extend(data)
             agn.append(Matrix(cM, mtype='b'))
+
+def error(doc, msg, err):
+    doc.append(NoEscape("\\vspace*{\\fill}"))
+    doc.append(NoEscape(msg))
+    doc.append(bold(err))
+    doc.append(NoEscape("\\vspace*{\\fill}"))
 
 
 def main(argv):
@@ -222,51 +229,62 @@ def main(argv):
     path, fileExtension = os.path.splitext(fileName)
     fileExtension = fileExtension[1:]
 
-    if fileExtension.lower() == 'json':
-        mc = mcio.jsonToMarkovChain(fileName)
-    else:
-        if len(argv) > 2:
-            mc = mcio.txtToMarkovChain(fileName, encoding=argv[2])
-        else:
-            mc = mcio.txtToMarkovChain(fileName)
-
-
-    st = mc.states()
-    iD = mc.initialDistribution()
-    iDA = mc.initialDistributionArray()
-    tL = mc.transitionsList()
-    tM = mc.transitionMatrix()
-    eL = mc.edgeList()
-    cM = mc.communicationMatrix()
-    classes = mc.classes()
-    recursive = mc.recursiveClasses()
-
-    image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
-
     doc = Document()
 
-    with doc.create(Section('Markov Chain')):
-
-        stateSet(doc, st)
-        initialDistribution(doc, iD)
-
-        if mc.size <= 20:
-            transitionMatrix(doc, tM)
+    try:
+        if fileExtension.lower() == 'json':
+            mc = mcio.jsonToMarkovChain(fileName)
         else:
-            transitionList(doc, tL)
+            if len(argv) > 2:
+                encoding = argv[2]
+                mc = mcio.txtToMarkovChain(fileName, encoding=encoding)
+            else:
+                mc = mcio.txtToMarkovChain(fileName)
 
-        edgeList(doc, eL)
-        classesSection(doc, classes)
-        periodAndRecur(doc, classes, recursive, mc)
 
-        if mc.size <= 20:
-            communicationMatrix(doc, cM)
+        st = mc.states()
+        iD = mc.initialDistribution()
+        iDA = mc.initialDistributionArray()
+        tL = mc.transitionsList()
+        tM = mc.transitionMatrix()
+        eL = mc.edgeList()
+        cM = mc.communicationMatrix()
+        classes = mc.classes()
+        recursive = mc.recursiveClasses()
 
-        createGraphImage(st, eL)
-        with doc.create(Figure()) as pic:
-            pic.add_image(image_filename)
+        image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
 
-    doc.generate_pdf(path, clean_tex=False)
+        doc.preamble.append(Package('inputenc', options = ['utf8']))
+
+        with doc.create(Section('Markov Chain')):
+
+            doc.append(NoEscape('\\allowdisplaybreaks'))
+
+            stateSet(doc, st)
+            initialDistribution(doc, iD)
+
+            if mc.size <= 20:
+                transitionMatrix(doc, tM)
+            else:
+                transitionList(doc, tL)
+
+            edgeList(doc, eL)
+            classesSection(doc, classes)
+            periodAndRecur(doc, classes, recursive, mc)
+
+            if mc.size <= 20:
+                communicationMatrix(doc, cM)
+
+        # createGraphImage(st, eL)
+        # with doc.create(Figure()) as pic:
+        #     pic.add_image(image_filename)
+
+        doc.generate_pdf(path, clean_tex=False)
+    except Exception, e:
+        doc = Document()
+        error(doc, "It is impossible to build the pdf file:\\\\", e)
+        doc.generate_pdf(path, clean_tex=False)
+        sys.exit(1)
 
 
 def dump(mc):
