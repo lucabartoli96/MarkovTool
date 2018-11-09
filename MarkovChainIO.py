@@ -13,7 +13,6 @@ TM = 'transitionMatrix'
 ARRAY_KEYS = (SS, ID, TM)
 
 
-#TODO: Testare a fondo
 def jsonToMarkovChain(path):
     with open(path) as f:
         data = json.load(f)
