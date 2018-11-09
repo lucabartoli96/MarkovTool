@@ -2,7 +2,7 @@
 from MarkovChain import MarkovChain
 import MarkovChainIO as mcio
 import time
-import os, sys
+import os, sys, traceback
 
 # Graph visualization libs
 import networkx as nx
@@ -275,14 +275,14 @@ def main(argv):
             if mc.size <= 20:
                 communicationMatrix(doc, cM)
 
-        # createGraphImage(st, eL)
-        # with doc.create(Figure()) as pic:
-        #     pic.add_image(image_filename)
+        createGraphImage(st, eL)
+        with doc.create(Figure()) as pic:
+            pic.add_image(image_filename)
 
         doc.generate_pdf(path, clean_tex=False)
     except Exception, e:
         doc = Document()
-        error(doc, "It is impossible to build the pdf file:\\\\", e)
+        error(doc, "It is impossible to build the pdf file:\\\\", traceback.format_exc())
         doc.generate_pdf(path, clean_tex=False)
         sys.exit(1)
 
