@@ -1,14 +1,17 @@
+# coding=utf-8
 
 from MarkovChain import MarkovChain
 import MarkovChainIO as mcio
 import time
 import os, sys, traceback
+import re
 
 # Graph visualization libs
 import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import dot2tex
 
 # Python to latex libs
 from pylatex import Document, Section, Command, Itemize, Subsection, Tabular,\
@@ -192,10 +195,26 @@ def periodAndRecur(doc, classes, recursive, mc):
                 data_table.add_row(row, escape=False)
 
 
-def createGraphImage(st, eL):
+def createGraphTikz(st, eL):
+
+    def replaceChars(s):
+        return (s.replace('#', '\#')
+        .replace('-', '_')
+        .replace(u'è', 'e\'')
+        .replace(u'é', 'e\'')
+        .replace(u'ù', 'u\'')
+        .replace(u'ì', 'i\'')
+        .replace(u'à', 'a\'')
+        .replace(u'ò', 'o\'')
+        .replace(u'’', '\''))
+
     G = nx.DiGraph()
-    G.add_nodes_from(st)
-    G.add_weighted_edges_from(eL)
+
+    nodes = list( replaceChars(s) for s in st)
+    edges = list( (replaceChars(t[0]), replaceChars(t[1]), t[2]) for t in eL)
+
+    G.add_nodes_from(nodes)
+    G.add_weighted_edges_from(edges)
     G.graph['edge'] = {'arrowsize': '1', 'splines': 'curved'}
     G.graph['graph'] = {'scale': '1000000'}
     A = to_agraph(G)
@@ -204,6 +223,9 @@ def createGraphImage(st, eL):
         e = A.get_edge(triplet[0], triplet[1])
         e.attr['label'] = triplet[2]
     A.draw('image.png')
+    texcode = dot2tex.dot2tex(A.to_string(), format='tikz', crop=True)
+    regEx = re.compile(r'(\\begin\{tikzpicture\})(.*?)(\\end\{tikzpicture\})', re.M|re.DOTALL)
+    return ''.join(regEx.findall(texcode)[0])
 
 
 def communicationMatrix(doc, cM):
@@ -212,6 +234,15 @@ def communicationMatrix(doc, cM):
         with doc.create(Alignat(numbering=False, escape=False)) as agn:
             agn.extend(data)
             agn.append(Matrix(cM, mtype='b'))
+
+
+def graphVisualization(doc, tikzcode):
+    doc.append(NewPage())
+    doc.append(NoEscape('\\begin{figure}[h]'))
+    doc.append(NoEscape('\\centering'))
+    doc.append(NoEscape(tikzcode))
+    doc.append(NoEscape('\\end{figure}'))
+
 
 def error(doc, msg, err):
     doc.append(NoEscape("\\vspace*{\\fill}"))
@@ -231,6 +262,8 @@ def main(argv):
 
     doc = Document()
 
+    print 'Processing \'%s\' to build Markov Chain...' % fileName
+
     try:
         if fileExtension.lower() == 'json':
             mc = mcio.jsonToMarkovChain(fileName)
@@ -241,46 +274,74 @@ def main(argv):
             else:
                 mc = mcio.txtToMarkovChain(fileName)
 
+        print 'Computing Markov Chain stuff...'
+        print 'States set...'
 
-        st = mc.states()
-        iD = mc.initialDistribution()
-        iDA = mc.initialDistributionArray()
-        tL = mc.transitionsList()
-        tM = mc.transitionMatrix()
-        eL = mc.edgeList()
-        cM = mc.communicationMatrix()
-        classes = mc.classes()
-        recursive = mc.recursiveClasses()
+        print 'Initial distribution...'
 
         image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
 
         doc.preamble.append(Package('inputenc', options = ['utf8']))
+        doc.preamble.append(NoEscape('\\usepackage{tikz}'))
+        doc.preamble.append(NoEscape('\\usetikzlibrary{shapes.geometric}'))
+        doc.preamble.append(NoEscape('\\usetikzlibrary{arrows.meta,arrows}'))
 
         with doc.create(Section('Markov Chain')):
 
             doc.append(NoEscape('\\allowdisplaybreaks'))
 
+            print 'Computing states set...'
+            st = mc.states()
+            print 'Creating latex code...'
             stateSet(doc, st)
+
+            print 'Computing initial distribution...'
+            iD = mc.initialDistribution()
+            print 'Creating latex code...'
             initialDistribution(doc, iD)
 
+            print 'Computing Transitions...'
             if mc.size <= 20:
+                tM = mc.transitionMatrix()
+                print 'Creating latex code...'
                 transitionMatrix(doc, tM)
             else:
+                tL = mc.transitionsList()
+                print 'Creating latex code...'
                 transitionList(doc, tL)
 
+            print 'Computing edges...'
+            eL = mc.edgeList()
+            print 'Creating latex code...'
             edgeList(doc, eL)
+
+            print 'Classes...'
+            classes = mc.classes()
+            print 'Creating latex code...'
             classesSection(doc, classes)
+
+            print 'Periodicity and Recurrence...'
+            recursive = mc.recursiveClasses()
+            print 'Creating latex code...'
             periodAndRecur(doc, classes, recursive, mc)
 
+
             if mc.size <= 20:
+                print 'Computing Communication Matrix...'
+                cM = mc.communicationMatrix()
+                print 'Creating latex code...'
                 communicationMatrix(doc, cM)
 
-        createGraphImage(st, eL)
-        with doc.create(Figure()) as pic:
-            pic.add_image(image_filename)
+        if len(st) < 500:
+            print 'Creating graph...'
+            tikzcode = createGraphTikz(st, eL)
+            print 'Creating latex code...'
+            graphVisualization(doc, tikzcode)
 
+        print 'Generating pdf...'
         doc.generate_pdf(path, clean_tex=False)
     except Exception, e:
+        print e
         doc = Document()
         error(doc, "It is impossible to build the pdf file:\\\\", traceback.format_exc())
         doc.generate_pdf(path, clean_tex=False)
