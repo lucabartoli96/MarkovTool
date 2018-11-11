@@ -199,7 +199,7 @@ def createGraphTikz(st, eL):
 
     def replaceChars(s):
         return (s.replace('#', '\#')
-        .replace('-', '_')
+        .replace('#', '\\#')
         .replace(u'è', 'e\'')
         .replace(u'é', 'e\'')
         .replace(u'ù', 'u\'')
@@ -210,8 +210,8 @@ def createGraphTikz(st, eL):
 
     G = nx.DiGraph()
 
-    nodes = list( replaceChars(s) for s in st)
-    edges = list( (replaceChars(t[0]), replaceChars(t[1]), t[2]) for t in eL)
+    nodes = list( i for i in range(len(st)))
+    edges = list( (st.index(t[0]), st.index(t[1]), t[2]) for t in eL)
 
     G.add_nodes_from(nodes)
     G.add_weighted_edges_from(edges)
@@ -219,9 +219,12 @@ def createGraphTikz(st, eL):
     G.graph['graph'] = {'scale': '1000000'}
     A = to_agraph(G)
     A.layout('dot')
-    for triplet in eL:
+    for i, s in enumerate(st):
+        n = A.get_node(i)
+        n.attr['label']= replaceChars(s)
+    for triplet in edges:
         e = A.get_edge(triplet[0], triplet[1])
-        e.attr['label'] = triplet[2]
+        e.attr['label'] = toLatexProb(triplet[2])
     A.draw('image.png')
     texcode = dot2tex.dot2tex(A.to_string(), format='tikz', crop=True)
     regEx = re.compile(r'(\\begin\{tikzpicture\})(.*?)(\\end\{tikzpicture\})', re.M|re.DOTALL)
@@ -240,7 +243,9 @@ def graphVisualization(doc, tikzcode):
     doc.append(NewPage())
     doc.append(NoEscape('\\begin{figure}[h]'))
     doc.append(NoEscape('\\centering'))
+    doc.append(NoEscape('\\resizebox {!} {\\textheight} {'))
     doc.append(NoEscape(tikzcode))
+    doc.append(NoEscape('}'))
     doc.append(NoEscape('\\end{figure}'))
 
 
@@ -285,6 +290,9 @@ def main(argv):
         doc.preamble.append(NoEscape('\\usepackage{tikz}'))
         doc.preamble.append(NoEscape('\\usetikzlibrary{shapes.geometric}'))
         doc.preamble.append(NoEscape('\\usetikzlibrary{arrows.meta,arrows}'))
+        doc.preamble.append(NoEscape('\\usepackage{pgfplots}'))
+        doc.preamble.append(NoEscape('\\pgfplotsset{compat=1.11}'))
+
 
         with doc.create(Section('Markov Chain')):
 
