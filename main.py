@@ -63,6 +63,69 @@ def commands(argv):
         return path, fileName, folder, fileExtension, format, name, encoding
 
 
+def buildPDF(mc, outputPath):
+    doc = Document()
+
+    preamble(doc)
+
+    with doc.create(Section('Markov Chain')):
+
+        print 'Computing states set...'
+        st = mc.states()
+        print 'Creating latex code...'
+        stateSet(doc, st)
+
+        print 'Computing initial distribution...'
+        iD = mc.initialDistribution()
+        print 'Creating latex code...'
+        initialDistribution(doc, iD)
+
+        print 'Computing Transitions...'
+        if mc.size <= 20:
+            tM = mc.transitionMatrix()
+            print 'Creating latex code...'
+            transitionMatrix(doc, tM)
+        else:
+            tL = mc.transitionsList()
+            print 'Creating latex code...'
+            transitionList(doc, tL)
+
+        print 'Computing edges...'
+        eL = mc.edgeList()
+        print 'Creating latex code...'
+        edgeList(doc, eL)
+
+        print 'Classes...'
+        classes = mc.classes()
+        print 'Creating latex code...'
+        classesSection(doc, classes)
+
+        print 'Periodicity and Recurrence...'
+        recursive = mc.recursiveClasses()
+        print 'Creating latex code...'
+        periodAndRecur(doc, classes, recursive, mc)
+
+
+        if mc.size <= 20:
+            print 'Computing Communication Matrix...'
+            cM = mc.communicationMatrix()
+            print 'Creating latex code...'
+            communicationMatrix(doc, cM)
+
+        if len(st) < 500:
+            print 'Creating graph...'
+            tikzcode = createGraphTikz(st, eL)
+            print 'Creating latex code...'
+            graphVisualization(doc, mc.size, tikzcode)
+
+    print 'Generating pdf...'
+    doc.generate_pdf(outputPath, clean_tex=False)
+
+
+
+def buildJSON(mc):
+    raise ValueError('Not implemented yet')
+
 
 def main(argv):
 
@@ -77,8 +140,6 @@ def main(argv):
     # print 'encoding: ' + encoding
     # print 'generated: ' + folder + '/' + name
 
-    doc = Document()
-
     print 'Processing \'%s\' to build Markov Chain...' % fileName
 
     try:
@@ -87,72 +148,21 @@ def main(argv):
         else:
             mc = mcio.txtToMarkovChain(path, encoding=encoding)
 
-        print 'Computing Markov Chain stuff...'
-        print 'States set...'
+        if format == PDF:
+            buildPDF(mc, folder + '/' + name)
+        else:
+            buildJSON(mc)
 
-        print 'Initial distribution...'
-
-        image_filename = os.path.join(os.path.dirname(__file__), 'image.png')
-
-        preamble(doc)
-
-        with doc.create(Section('Markov Chain')):
-
-            print 'Computing states set...'
-            st = mc.states()
-            print 'Creating latex code...'
-            stateSet(doc, st)
-
-            print 'Computing initial distribution...'
-            iD = mc.initialDistribution()
-            print 'Creating latex code...'
-            initialDistribution(doc, iD)
-
-            print 'Computing Transitions...'
-            if mc.size <= 20:
-                tM = mc.transitionMatrix()
-                print 'Creating latex code...'
-                transitionMatrix(doc, tM)
-            else:
-                tL = mc.transitionsList()
-                print 'Creating latex code...'
-                transitionList(doc, tL)
-
-            print 'Computing edges...'
-            eL = mc.edgeList()
-            print 'Creating latex code...'
-            edgeList(doc, eL)
-
-            print 'Classes...'
-            classes = mc.classes()
-            print 'Creating latex code...'
-            classesSection(doc, classes)
-
-            print 'Periodicity and Recurrence...'
-            recursive = mc.recursiveClasses()
-            print 'Creating latex code...'
-            periodAndRecur(doc, classes, recursive, mc)
-
-
-            if mc.size <= 20:
-                print 'Computing Communication Matrix...'
-                cM = mc.communicationMatrix()
-                print 'Creating latex code...'
-                communicationMatrix(doc, cM)
-
-            if len(st) < 500:
-                print 'Creating graph...'
-                tikzcode = createGraphTikz(st, eL)
-                print 'Creating latex code...'
-                graphVisualization(doc, mc.size, tikzcode)
-
-        print 'Generating pdf...'
-        doc.generate_pdf(folder + '/' + name, clean_tex=False)
     except Exception, e:
         print e
-        doc = Document()
-        error(doc, "It is impossible to build the pdf file:\\\\", traceback.format_exc())
-        doc.generate_pdf(folder + '/' + name, clean_tex=False)
+
+        if format == PDF:
+            doc = Document()
+            error(doc, "It is impossible to build the pdf file:\\\\", traceback.format_exc())
+            doc.generate_pdf(folder + '/' + name, clean_tex=False)
+        else:
+            pass
+
         sys.exit(1)
 
 
