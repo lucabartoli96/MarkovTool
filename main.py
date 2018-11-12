@@ -46,8 +46,6 @@ def main(argv):
 
         with doc.create(Section('Markov Chain')):
 
-            doc.append(NoEscape('\\allowdisplaybreaks'))
-
             print 'Computing states set...'
             st = mc.states()
             print 'Creating latex code...'

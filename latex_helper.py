@@ -69,6 +69,7 @@ def preamble(doc):
     doc.preamble.append(NoEscape('\\usetikzlibrary{arrows.meta,arrows}'))
     doc.preamble.append(NoEscape('\\usepackage{pgfplots}'))
     doc.preamble.append(NoEscape('\\pgfplotsset{compat=1.11}'))
+    doc.preamble.append(NoEscape('\\allowdisplaybreaks'))
 
 
 def stateSet(doc, st):
