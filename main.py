@@ -173,15 +173,6 @@ def main(argv):
 
     path, fileName, folder, fileExtension, format, name, encoding = commands(argv)
 
-    # print 'Path: ' + path
-    # print 'Filename: ' + fileName
-    # print 'fileExtension: ' + fileExtension
-    # print 'folder: ' + folder
-    # print 'format: ' + format
-    # print 'name: ' + name
-    # print 'encoding: ' + encoding
-    # print 'generated: ' + folder + '/' + name
-
     print 'Processing \'%s\' to build Markov Chain...' % fileName
 
     try:

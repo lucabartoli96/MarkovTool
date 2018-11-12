@@ -1,5 +1,6 @@
 
 import numpy as np
+from random import random
 
 INITIAL = 'initial'
 TRANSITIONS = 'transitions'
@@ -49,22 +50,33 @@ class MarkovChain:
             #   ...
             #}
             def __init__(self, sigma):
-                self._sigma = tuple( (sigma[i], i) for i in sigma )
+                self._sigma = tuple( (i, sigma[i]) for i in sigma )
 
             def random(self):
-                pass
+                val = random()
+
+                lower = 0
+                for couple in self._sigma:
+                    prob = couple[1]
+                    index = couple[0]
+
+                    if val >= lower and val < lower + prob:
+                        return mc._mc[index]
+
+                    lower += prob
+
 
             def toArray(self):
                 sigma = np.zeros(mc.size)
                 for pair in self._sigma:
-                    sigma[pair[1]] = pair[0]
+                    sigma[pair[0]] = pair[1]
                 return sigma
 
             def toMap(self):
                 sigma = {}
                 for pair in self._sigma:
-                    p = pair[0]
-                    s = mc._mc[pair[1]].name
+                    p = pair[1]
+                    s = mc._mc[pair[0]].name
                     sigma[s] = p
                 return sigma
 
@@ -87,7 +99,17 @@ class MarkovChain:
                 return self._transitions
 
             def random(self):
-                pass
+                val = random()
+
+                lower = 0
+                for couple in self._transitions:
+                    prob = couple[1]
+                    index = couple[0]
+
+                    if val >= lower and val < lower + prob:
+                        return mc._mc[index]
+
+                    lower += prob
 
         return MarkovChainState, Sigma
 
@@ -500,9 +522,11 @@ class MarkovChain:
                 self._s = None
 
             def next(self):
-                if self._s:
+                if not self._s:
                     self._s = mc._sigma.random()
                 else:
                     self._s = self._s.random()
 
                 return self._s.name
+
+        return Path()
