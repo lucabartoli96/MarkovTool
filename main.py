@@ -11,9 +11,7 @@ from latex_helper import *
 # Python to latex libs
 from pylatex import Document, Section, NoEscape
 
-PDF = 'pdf'
-JSON = 'json'
-
+PDF, JSON, DUMP = 'pdf', 'json', 'dump'
 
 def commands(argv):
 
@@ -41,7 +39,7 @@ def commands(argv):
 
             if option == 'f':
                 format = argv[i+1].lower()
-                if format not in (PDF, JSON):
+                if format not in (PDF, JSON, DUMP):
                     raise ValueError('Unsupported format %s' % format)
             elif option == 'n':
                 name = argv[i+1]
@@ -61,6 +59,50 @@ def commands(argv):
             name = fileName
 
         return path, fileName, folder, fileExtension, format, name, encoding
+
+
+def dump(mc):
+
+    print 'State set: '
+    st = mc.states()
+    print st
+
+    print 'Initial distribution: '
+    iD = mc.initialDistribution()
+    print iD
+
+    print 'Initial distribution array: '
+    iDA = mc.initialDistributionArray()
+    print iDA
+
+    print 'Transitions list: '
+    tL = mc.transitionsList()
+    print tL
+
+    print 'Transition matrix: '
+    tM = mc.transitionMatrix()
+    print tM
+
+    print 'Edges list: '
+    eL = mc.edgeList()
+    print eL
+
+    print 'Communication Matrix: '
+    cM = mc.communicationMatrix()
+    print cM
+
+    print 'Classes: '
+    classes = mc.classes()
+    print classes
+
+    print 'Periodicity: '
+    for state in classes:
+        print "period(" + state + ")= " + str(mc.period(state))
+
+    print 'Recursive classes: '
+    recursive = mc.recursiveClasses()
+    print recursive
+
 
 
 def buildPDF(mc, outputPath):
@@ -150,8 +192,10 @@ def main(argv):
 
         if format == PDF:
             buildPDF(mc, folder + '/' + name)
-        else:
+        elif format == JSON:
             buildJSON(mc)
+        else:
+            dump(mc)
 
     except Exception, e:
         print e
@@ -164,45 +208,3 @@ def main(argv):
             pass
 
         sys.exit(1)
-
-
-def dump(mc):
-    st = mc.states()
-    iD = mc.initialDistribution()
-    iDA = mc.initialDistributionArray()
-    tL = mc.transitionsList()
-    tM = mc.transitionMatrix()
-    eL = mc.edgeList()
-
-    print st
-    print iDA
-    print tL
-    print tM
-    print eL
-
-    # Test Communication Matrix computation
-    C = mc.comMat()
-    print C
-    print ""
-
-
-    # Test classes procedure
-    classes = mc.classes()
-    print classes
-    print ""
-
-    # Test single state class procedure
-    for s in st:
-        print s + ': ' + str(mc.getClass(s))
-    print ""
-
-    # For each couple of states prints if they
-    # communicate or they are equivalent
-    for  s1 in S:
-        for s2 in S:
-            print s1 + '<' + s2 + ': ' + str(mc.communicate(s1, s2))
-            print s1 + '=' + s2 + ': ' + str(mc.equivalent(s1, s2))
-            print ""
-
-    for state in st:
-        print "period(" + state + ")= " + str(mc.period(state))
