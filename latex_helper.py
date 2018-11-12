@@ -228,13 +228,15 @@ def communicationMatrix(doc, cM):
             agn.append(Matrix(cM, mtype='b'))
 
 
-def graphVisualization(doc, tikzcode):
+def graphVisualization(doc, size, tikzcode):
     doc.append(NewPage())
     doc.append(NoEscape('\\begin{figure}[h]'))
     doc.append(NoEscape('\\centering'))
-    doc.append(NoEscape('\\resizebox {!} {\\textheight} {'))
+    if size > 100:
+        doc.append(NoEscape('\\resizebox {!} {\\textheight} {'))
     doc.append(NoEscape(tikzcode))
-    doc.append(NoEscape('}'))
+    if size > 100:
+        doc.append(NoEscape('}'))
     doc.append(NoEscape('\\end{figure}'))
 
 

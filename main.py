@@ -140,11 +140,11 @@ def main(argv):
                 print 'Creating latex code...'
                 communicationMatrix(doc, cM)
 
-        if len(st) < 500:
-            print 'Creating graph...'
-            tikzcode = createGraphTikz(st, eL)
-            print 'Creating latex code...'
-            graphVisualization(doc, tikzcode)
+            if len(st) < 500:
+                print 'Creating graph...'
+                tikzcode = createGraphTikz(st, eL)
+                print 'Creating latex code...'
+                graphVisualization(doc, mc.size, tikzcode)
 
         print 'Generating pdf...'
         doc.generate_pdf(folder + '/' + name, clean_tex=False)
