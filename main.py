@@ -11,29 +11,75 @@ from latex_helper import *
 # Python to latex libs
 from pylatex import Document, Section, NoEscape
 
+PDF = 'pdf'
+JSON = 'json'
 
-def main(argv):
+
+def commands(argv):
+
+    # input file params
+    fileName = None
+    folder = None
+    fileExtension = None
+
+    # output file params
+    format = PDF
+    name = None
+    encoding = None
 
     if len(argv) == 1 :
         raise ValueError('No file name specified')
+    else:
+        i = 1
+        while argv[i].startswith('-'):
+            option = argv[i][1:]
 
-    fileName = argv[1]
-    path, fileExtension = os.path.splitext(fileName)
-    fileExtension = fileExtension[1:]
+            if i+1 > len(argv)-1:
+                raise ValueError('Expected parameter after \'%s\', got nothing' % argv[i])
+            elif argv[i+1].startswith('-'):
+                raise ValueError('Expected parameter after \'%s\', got command \'%s\'' % (argv[i], argv[i+1]))
+
+            if option == 'f':
+                format = argv[i+1].lower()
+                if format not in (PDF, JSON):
+                    raise ValueError('Unsupported format %s' % format)
+            elif option == 'n':
+                name = argv[i+1]
+            elif option == 'enc':
+                encoding = argv[i+1]
+            else:
+                raise ValueError('Unknwn command %s' % argv[i])
+
+            i += 2
+
+        path = argv[i]
+        folder, fileName = os.path.split(path)
+        fileName = fileName[:fileName.rfind('.')]
+        fileExtension = os.path.splitext(fileName)[1][1:]
+
+        if not name:
+            name = fileName
+
+        return path, fileName, folder, fileExtension, format, name, encoding
+
+
+
+def main(argv):
+
+    path, fileName, folder, fileExtension, format, name, encoding = commands(argv)
 
     doc = Document()
 
     print 'Processing \'%s\' to build Markov Chain...' % fileName
 
     try:
-        if fileExtension.lower() == 'json':
-            mc = mcio.jsonToMarkovChain(fileName)
+        if fileExtension == 'json':
+            mc = mcio.jsonToMarkovChain(path)
         else:
-            if len(argv) > 2:
-                encoding = argv[2]
-                mc = mcio.txtToMarkovChain(fileName, encoding=encoding)
+            if encoding:
+                mc = mcio.txtToMarkovChain(path, encoding=encoding)
             else:
-                mc = mcio.txtToMarkovChain(fileName)
+                mc = mcio.txtToMarkovChain(path)
 
         print 'Computing Markov Chain stuff...'
         print 'States set...'
@@ -95,7 +141,7 @@ def main(argv):
             graphVisualization(doc, tikzcode)
 
         print 'Generating pdf...'
-        doc.generate_pdf(path, clean_tex=False)
+        doc.generate_pdf(folder + '/' + name, clean_tex=False)
     except Exception, e:
         print e
         doc = Document()
