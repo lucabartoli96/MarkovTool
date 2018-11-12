@@ -55,7 +55,7 @@ def commands(argv):
         path = argv[i]
         folder, fileName = os.path.split(path)
         fileName = fileName[:fileName.rfind('.')]
-        fileExtension = os.path.splitext(fileName)[1][1:]
+        fileExtension = os.path.splitext(path)[1][1:]
 
         if not name:
             name = fileName
@@ -68,18 +68,24 @@ def main(argv):
 
     path, fileName, folder, fileExtension, format, name, encoding = commands(argv)
 
+    # print 'Path: ' + path
+    # print 'Filename: ' + fileName
+    # print 'fileExtension: ' + fileExtension
+    # print 'folder: ' + folder
+    # print 'format: ' + format
+    # print 'name: ' + name
+    # print 'encoding: ' + encoding
+    # print 'generated: ' + folder + '/' + name
+
     doc = Document()
 
     print 'Processing \'%s\' to build Markov Chain...' % fileName
 
     try:
         if fileExtension == 'json':
-            mc = mcio.jsonToMarkovChain(path)
+            mc = mcio.jsonToMarkovChain(path, encoding=encoding)
         else:
-            if encoding:
-                mc = mcio.txtToMarkovChain(path, encoding=encoding)
-            else:
-                mc = mcio.txtToMarkovChain(path)
+            mc = mcio.txtToMarkovChain(path, encoding=encoding)
 
         print 'Computing Markov Chain stuff...'
         print 'States set...'
@@ -146,7 +152,7 @@ def main(argv):
         print e
         doc = Document()
         error(doc, "It is impossible to build the pdf file:\\\\", traceback.format_exc())
-        doc.generate_pdf(path, clean_tex=False)
+        doc.generate_pdf(folder + '/' + name, clean_tex=False)
         sys.exit(1)
 
 

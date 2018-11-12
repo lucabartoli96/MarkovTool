@@ -13,13 +13,19 @@ TM = 'transitionMatrix'
 ARRAY_KEYS = (SS, ID, TM)
 
 
-def jsonToMarkovChain(path):
-    with open(path) as f:
-        data = json.load(f)
+def jsonToMarkovChain(path, encoding=None):
+
+    if encoding:
+        file = io.open(path, 'r', encoding=encoding)
+    else:
+        file = open(path, 'r')
+
+    data = json.load(file)
     if all(k in data for k in ARRAY_KEYS):
         return MarkovChain(data[SS], data[ID], data[TM])
     else:
         return MarkovChain(data)
+
 
 K = 2
 
