@@ -216,6 +216,15 @@ def createGraphTikz(st, eL):
         e.attr['label'] = toLatexProb(triplet[2])
     A.draw('image.png')
     texcode = dot2tex.dot2tex(A.to_string(), format='tikz', crop=True)
+
+    texcode = texcode.replace('\\backslash', '')
+    fracRE = re.compile(r'frac\\{[0-9]+\\}\\{[0-9]+\\}', re.M|re.DOTALL)
+
+    def unescapeFrac(match):
+        return '$\\' + match.group().replace('\\', '') + '$'
+
+    texcode = fracRE.sub(unescapeFrac, texcode)
+
     regEx = re.compile(r'(\\begin\{tikzpicture\})(.*?)(\\end\{tikzpicture\})', re.M|re.DOTALL)
     return ''.join(regEx.findall(texcode)[0])
 
@@ -232,11 +241,9 @@ def graphVisualization(doc, size, tikzcode):
     doc.append(NewPage())
     doc.append(NoEscape('\\begin{figure}[h]'))
     doc.append(NoEscape('\\centering'))
-    if size > 100:
-        doc.append(NoEscape('\\resizebox {!} {\\textheight} {'))
+    doc.append(NoEscape('\\resizebox {!} {\\textheight} {'))
     doc.append(NoEscape(tikzcode))
-    if size > 100:
-        doc.append(NoEscape('}'))
+    doc.append(NoEscape('}'))
     doc.append(NoEscape('\\end{figure}'))
 
 
